@@ -496,8 +496,12 @@ export default function App() {
                 onOpenMuhasabaDetails={() => setActiveTab('muhasaba')}
               />
 
-              {/* 3. Daily Notification Toggle Bar */}
-              <NotificationToggleBar />
+              {/* 3. Daily Notification Toggle Bar (Prayer Alarms & Incomplete Amol SMS Notifications) */}
+              <NotificationToggleBar
+                schedule={prayerSchedule}
+                dayState={dayState}
+                allAmols={allAmols}
+              />
 
               {/* 4. Banner Ad Placement Carousel (Announcements & Events) */}
               <BannerAdsCarousel />
