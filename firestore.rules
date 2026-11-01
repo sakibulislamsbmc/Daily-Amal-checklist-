@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User profile document
+    match /users/{userId} {
+      allow get, write: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+
+      // Daily amol subcollection
+      match /dailyAmols/{dateId} {
+        allow get, write, delete: if isValidId(userId) && isValidId(dateId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId);
+      }
+
+      // Custom amol subcollection
+      match /customAmols/{amolId} {
+        allow get, write, delete: if isValidId(userId) && isValidId(amolId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId);
+      }
+    }
+
+    // Global site traffic & unique visitor counter
+    match /siteStats/{statsId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(statsId);
+    }
+
+    match /visitors/{visitorId} {
+      allow get: if isValidId(visitorId);
+      allow create, update: if isValidId(visitorId);
+    }
+  }
+}

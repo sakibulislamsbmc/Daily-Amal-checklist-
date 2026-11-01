@@ -1,0 +1,6 @@
+{
+  "name": "Daily Amol Checklist",
+  "description": "Daily Islamic Muhasaba checklist and spiritual productivity tracker with Bangladesh prayer times, Google Calendar sync, and visitor counter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

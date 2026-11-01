@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile and settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "timezone": { "type": "string", "maxLength": 64 },
+        "language": { "type": "string", "maxLength": 10 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "DailyAmolRecord": {
+      "title": "DailyAmolRecord",
+      "description": "Daily Islamic Muhasaba record for a specific date in Bangladesh time",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 10, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "completedAmols": { "type": "string", "description": "JSON stringified map of completed amols" },
+        "score": { "type": "number" },
+        "totalCompleted": { "type": "number" },
+        "reflection": { "type": "string", "maxLength": 2000 },
+        "tasbeehSummary": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date", "createdAt"]
+    },
+    "CustomAmol": {
+      "title": "CustomAmol",
+      "description": "User created custom amol item",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "category": { "type": "string", "maxLength": 50 },
+        "target": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "createdAt"]
+    },
+    "SiteStats": {
+      "title": "SiteStats",
+      "description": "Global traffic statistics including total unique visitors",
+      "type": "object",
+      "properties": {
+        "totalUniqueVisitors": { "type": "number" },
+        "lastVisitedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["totalUniqueVisitors"]
+    },
+    "Visitor": {
+      "title": "Visitor",
+      "description": "Unique visitor record for traffic analytics",
+      "type": "object",
+      "properties": {
+        "visitorId": { "type": "string", "maxLength": 128 },
+        "visitedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["visitorId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores individual user profile settings"
+    },
+    "/users/{userId}/dailyAmols/{dateId}": {
+      "schema": "DailyAmolRecord",
+      "description": "Stores user daily amol checklist for date YYYY-MM-DD"
+    },
+    "/users/{userId}/customAmols/{amolId}": {
+      "schema": "CustomAmol",
+      "description": "Stores user customized spiritual tasks"
+    },
+    "/siteStats/{statsId}": {
+      "schema": "SiteStats",
+      "description": "Application wide traffic and visitor count document"
+    },
+    "/visitors/{visitorId}": {
+      "schema": "Visitor",
+      "description": "Unique visitor registry preventing duplicate visitor counts"
+    }
+  }
+}
