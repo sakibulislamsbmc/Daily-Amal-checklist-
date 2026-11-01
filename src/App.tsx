@@ -402,23 +402,23 @@ export default function App() {
   ];
 
   const handleTabChange = (tab: MobileTab) => {
-    if (tab === 'tasbeeh') {
-      setIsTasbeehOpen(true);
-      return;
-    }
     if (tab === 'export') {
       setIsExportOpen(true);
       return;
     }
+    if (tab === 'profile') {
+      setIsProfileOpen(true);
+      return;
+    }
     if (tab === 'developer') {
-      setIsDeveloperOpen(true);
+      setActiveTab('developer');
       return;
     }
     setActiveTab(tab);
   };
 
   return (
-    <div className="min-h-screen bg-[#E2E8F0] text-slate-800 flex justify-center items-center sm:py-6 selection:bg-emerald-500 selection:text-white font-['Hind_Siliguri']">
+    <div className="min-h-screen bg-[#E2E8F0] text-slate-800 flex justify-center items-center sm:py-6 selection:bg-emerald-500 selection:text-white font-anek-bangla">
       
       {/* Centered Mobile Device Frame (430px) Matching Reference Exactly */}
       <div className="mobile-device-shell flex flex-col no-scrollbar">
@@ -613,12 +613,12 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 3: MUHASABA DASHBOARD */}
+          {/* TAB 3: COMBINED MUHASABA & DIGITAL TASBEEH SECTION */}
           {activeTab === 'muhasaba' && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="text-center pt-1 pb-1">
-                <h2 className="text-base font-extrabold text-slate-800">মুহাসাবা স্কোর ও বিশ্লেষণ</h2>
-                <p className="text-xs text-slate-500 font-medium">দৈনিক অগ্রগতি, সাপ্তাহিক গড় ও মাসিক সামগ্রিক স্কোর</p>
+                <h2 className="text-base font-extrabold text-slate-800">মুহাসাবা ও ডিজিটাল তাসবীহ</h2>
+                <p className="text-xs text-slate-500 font-medium">দৈনিক অগ্রগতি, সাপ্তাহিক গড়, মাসিক স্কোর ও তাসবীহ গণনা</p>
               </div>
 
               <MuhasabaScoreCard
@@ -629,9 +629,64 @@ export default function App() {
                 onOpenTasbeeh={() => setIsTasbeehOpen(true)}
               />
 
+              {/* Unified Digital Tasbeeh Card inside Muhasaba Section */}
               <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-800">মাসিক রিপোর্ট ও প্রোফাইল</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">📿</span>
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-800">ডিজিটাল তাসবীহ ও জিকির</h3>
+                      <p className="text-[11px] text-slate-500 font-medium">ট্যাপ করে তাৎক্ষণিক জিকির গণনা করুন</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsTasbeehOpen(true)}
+                    className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold transition-colors"
+                  >
+                    ফুল-স্ক্রিন তাসবীহ
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: 'subhanallah', label: 'সুবহানাল্লাহ', target: 33 },
+                    { key: 'alhamdulillah', label: 'আলহামদুলিল্লাহ', target: 33 },
+                    { key: 'allahuakbar', label: 'আল্লাহু আকবার', target: 34 },
+                    { key: 'astaghfirullah', label: 'আস্তাগফিরুল্লাহ', target: 100 },
+                    { key: 'durood', label: 'দরূদ শরীফ', target: 100 },
+                    { key: 'lailahaillallah', label: 'লা ইলাহা ইল্লাল্লাহ', target: 100 },
+                  ].map((dhikr) => {
+                    const count = dayState.tasbeehCounts[dhikr.key] || 0;
+                    return (
+                      <button
+                        key={dhikr.key}
+                        onClick={() => {
+                          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                            navigator.vibrate(12);
+                          }
+                          handleUpdateTasbeehCounts({
+                            ...dayState.tasbeehCounts,
+                            [dhikr.key]: count + 1,
+                          });
+                        }}
+                        className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/80 active:scale-95 border border-emerald-200/80 flex items-center justify-between text-left transition-all cc-light-swipe"
+                      >
+                        <div>
+                          <p className="text-xs font-extrabold text-slate-800">{dhikr.label}</p>
+                          <p className="text-[10px] text-slate-500 font-semibold">লক্ষ্য: {dhikr.target}</p>
+                        </div>
+                        <span className="px-2 py-1 rounded-xl bg-emerald-600 text-white font-mono text-xs font-black shadow-xs">
+                          +{count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800">মাসিক ও সাপ্তাহিক রিপোর্ট এক্সপোর্ট</h3>
                   <button
                     onClick={() => setIsProfileOpen(true)}
                     className="text-xs font-bold text-emerald-600 hover:underline"
@@ -640,13 +695,13 @@ export default function App() {
                   </button>
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                  আপনার মাসিক রিপোর্ট Word (.docx), Excel (.xlsx), এবং হাই-রেজোলিউশন ইমেজ (.jpg) ফরম্যাটে ডাউনলোড করতে পারেন।
+                  আপনার দৈনিক, সাপ্তাহিক (সপ্তাহ ১-৫) ও মাসিক রিপোর্ট Word (.docx), Excel (.xlsx), এবং হাই-রেজোলিউশন ইমেজ (.jpg) ফরম্যাটে ডাউনলোড করতে পারেন।
                 </p>
                 <button
                   onClick={() => setIsExportOpen(true)}
-                  className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all"
+                  className="w-full py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition-all shadow-sm cc-light-swipe"
                 >
-                  এক্সপোর্ট সেন্টার খুলুন
+                  রিপোর্ট ও এক্সপোর্ট সেন্টার খুলুন
                 </button>
               </div>
             </div>
@@ -774,6 +829,7 @@ export default function App() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           pendingLateCount={0}
+          currentUser={currentUser}
         />
 
         {/* Profile & Activities Dashboard Modal (Firebase Integration) */}
@@ -840,6 +896,8 @@ export default function App() {
           isOpen={isExportOpen}
           onClose={() => setIsExportOpen(false)}
           currentDateStr={currentDateStr}
+          dayState={dayState}
+          allAmols={allAmols}
         />
 
         {/* PWA Mobile App Install Modal */}

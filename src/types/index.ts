@@ -141,12 +141,44 @@ export interface TrafficStats {
   isLive: boolean;
 }
 
+export interface DailyReportEntry {
+  date: string;
+  dayNumber: number;
+  weekIndex: number; // 0-indexed (0 = Week 1)
+  score: number;
+  earnedPoints: number;
+  totalPossiblePoints: number;
+  completedCount: number;
+  subTaskCount: number;
+  onTimeCount: number;
+  lateCount: number;
+  completedTitles: string[];
+  reflectionNote?: string;
+  tasbeehTotal: number;
+  isLogged: boolean;
+}
+
+export interface WeeklyReportSummary {
+  weekIndex: number;
+  weekLabel: string;
+  shortLabel: string;
+  dateRangeBn: string;
+  score: number;
+  loggedDays: number;
+  totalDaysInWeek: number;
+  completedAmolsCount: number;
+  onTimeCount: number;
+  lateCount: number;
+}
+
 export interface MonthlyStatsReport {
   monthStr: string; // YYYY-MM
   monthNameBn: string;
+  totalDaysInMonth: number;
   totalDaysLogged: number;
   dailyScoreAverage: number;
-  weeklyAverages: { weekLabel: string; score: number }[];
+  weeklyAverages: WeeklyReportSummary[];
+  dailyBreakdown: DailyReportEntry[];
   monthlyAggregateScore: number;
   totalCompletedAmols: number;
   onTimeCount: number;

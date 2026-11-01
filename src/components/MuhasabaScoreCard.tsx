@@ -53,7 +53,7 @@ export const MuhasabaScoreCard: React.FC<MuhasabaScoreCardProps> = ({
       }
     }
     const monthDailyAvg = monthDaysLogged > 0 ? Math.round(monthSum / monthDaysLogged) : dailyScore.percentage;
-    const monthlyAgg = Math.round((monthDaysLogged / daysInMonth) * monthDailyAvg) || monthDailyAvg;
+    const monthlyAgg = monthDailyAvg;
 
     return { weeklyAverage: weeklyAvg, monthlyAggregate: monthlyAgg };
   }, [state, allAmols, currentDateStr, dailyScore.percentage]);

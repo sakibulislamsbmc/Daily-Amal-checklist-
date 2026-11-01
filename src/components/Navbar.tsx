@@ -121,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* App Developer Information Button */}
           <button
             onClick={onOpenDeveloper}
-            className="p-1 rounded-xl bg-emerald-950/10 hover:bg-emerald-100 border border-emerald-500/30 hover:border-emerald-500 transition-all flex items-center justify-center shadow-xs"
+            className="p-1 rounded-xl bg-emerald-950/10 hover:bg-emerald-100 border border-emerald-500/30 hover:border-emerald-500 transition-all flex items-center justify-center shadow-xs cc-light-swipe"
             title="App Developer Information • অ্যাপ ডেভেলপার তথ্য"
           >
             <img
@@ -130,35 +130,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="w-5 h-5 rounded-lg object-contain shadow-xs"
             />
           </button>
-
-          {/* Profile / Auth Button */}
-          {currentUser ? (
-            <button
-              onClick={onOpenProfile}
-              className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-200/60 transition-all"
-              title="প্রোফাইল ও ড্যাশবোর্ড খুলুন"
-            >
-              {currentUser.photoURL ? (
-                <img
-                  src={currentUser.photoURL}
-                  alt={currentUser.displayName || 'User'}
-                  className="w-7 h-7 rounded-full ring-2 ring-emerald-500 object-cover"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
-                  {currentUser.displayName ? currentUser.displayName[0].toUpperCase() : 'U'}
-                </div>
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={onOpenProfile}
-              className="p-1.5 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1"
-              title="প্রোফাইল ও সাইন-ইন"
-            >
-              <UserIcon className="w-4 h-4 stroke-[2.2]" />
-            </button>
-          )}
 
         </div>
 

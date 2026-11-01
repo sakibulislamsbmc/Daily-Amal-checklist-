@@ -23,31 +23,38 @@ export const ScrollingNotificationBar: React.FC<ScrollingNotificationBarProps> =
     const coreAnnouncements = [
       {
         id: 'core-1',
-        tag: 'ঘোষণা',
-        text: 'দৈনিক আমল চেকলিস্টে স্বাগতম! প্রতিদিনের ফরজ, ওয়াজিব ও সুন্নাত আমলের নিখুঁত মুহাসাবা করুন।',
+        tag: 'বিশেষ ঘোষণা',
+        highlightPrefix: 'স্বাগতম:',
+        text: 'দৈনিক আমল চেকলিস্টে প্রতিদিনের ফরজ, ওয়াজিব ও সুন্নাত আমলের নিখুঁত মুহাসাবা করুন।',
+        highlightSuffix: 'আল্লাহ তাআলা কবুল করুন',
       },
       {
         id: 'core-2',
         tag: 'মোবাইল অ্যাপ',
-        text: 'অ্যাপ হিসেবে ফোনে ইনস্টল করতে "মোবাইল অ্যাপ ইনস্টল" বাটনে ক্লিক করুন — অফলাইনেও চলবে!',
+        highlightPrefix: 'অফলাইন সুবিধা:',
+        text: 'অ্যাপ হিসেবে ফোনে ইনস্টল করতে "মোবাইল অ্যাপ ইনস্টল" বাটনে ক্লিক করুন — ইন্টারনেট ছাড়াও চলবে!',
         action: onOpenInstall,
         actionText: 'ইনস্টল করুন',
       },
       {
         id: 'core-3',
         tag: 'ক্যালেন্ডার সিঙ্ক',
-        text: 'বাংলাদেশ সময় ও হানাফী ওয়াক্ত অনুযায়ী সকল সালাতের শিডিউল গুগল ক্যালেন্ডারে যুক্ত করুন।',
+        highlightPrefix: 'হানাফী ওয়াক্ত:',
+        text: 'বাংলাদেশ সময় অনুযায়ী সকল সালাতের জামাত ও আজানের শিডিউল গুগল ক্যালেন্ডারে যুক্ত করুন।',
         action: onOpenCalendarSync,
         actionText: 'সিঙ্ক করুন',
       },
       {
         id: 'core-4',
         tag: 'হাদিস শরিফ',
-        text: '“যে ব্যক্তি সৎকাজের পথ দেখায়, সে তার সম্পাদনকারীর অনুরূপ সওয়াব পাবে।” — সহীহ মুসলিম: ১৮৯৩',
+        highlightPrefix: 'রাসূলুল্লাহ (সা.) বলেছেন:',
+        text: '“যে ব্যক্তি সৎকাজের পথ দেখায়, সে তার সম্পাদনকারীর অনুরূপ সওয়াব পাবে।”',
+        highlightSuffix: '— সহীহ মুসলিম: ১৮৯৩',
       },
       {
         id: 'core-5',
-        tag: 'ডেভেলপার',
+        tag: 'ডেভেলপার পরিচিতি',
+        highlightPrefix: 'Sakibul Islam Sabbir:',
         text: 'অ্যাপ ডেভেলপার সাকিবুল ইসলাম সাব্বির (Founder & CEO, Bismahsoft) এর প্রোফাইল ও বিস্তারিত দেখতে ক্লিক করুন।',
         action: onOpenDeveloper,
         actionText: 'প্রোফাইল দেখুন',
@@ -57,7 +64,9 @@ export const ScrollingNotificationBar: React.FC<ScrollingNotificationBarProps> =
     const asSunnahNotices = AS_SUNNAH_ACTIVITIES.map((act) => ({
       id: act.id,
       tag: 'আস-সুন্নাহ ফাউন্ডেশন',
-      text: `${act.title}: ${act.description}`,
+      highlightPrefix: `${act.title}:`,
+      text: act.description,
+      highlightSuffix: undefined,
       action: () => {
         setModalTab('assunnah');
         setIsModalOpen(true);
@@ -67,8 +76,10 @@ export const ScrollingNotificationBar: React.FC<ScrollingNotificationBarProps> =
 
     const qaNotices = SHAYKH_AHMADULLAH_100_QA.map((qa) => ({
       id: `qa-${qa.id}`,
-      tag: `শায়খ আহমাদুল্লাহ প্রশ্নোত্তর #${qa.id} (${qa.category})`,
-      text: `প্রশ্ন: ${qa.question} — উত্তর: ${qa.answer}`,
+      tag: `প্রশ্নোত্তর #${qa.id} • ${qa.category}`,
+      highlightPrefix: `প্রশ্ন: ${qa.question}`,
+      text: ` — উত্তর: ${qa.answer}`,
+      highlightSuffix: '(শায়খ আহমাদুল্লাহ)',
       action: () => {
         setModalTab('qa');
         setIsModalOpen(true);
@@ -93,101 +104,102 @@ export const ScrollingNotificationBar: React.FC<ScrollingNotificationBarProps> =
 
   if (isDismissed) return null;
 
+  const renderNoticeEntry = (item: (typeof allNoticeItems)[number], keyPrefix = '') => (
+    <div key={`${keyPrefix}${item.id}`} className="inline-flex items-center gap-2 font-anek-bangla">
+      {/* Green Highlighted Tag */}
+      <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300 shadow-2xs">
+        {item.tag}
+      </span>
+
+      {/* Green Highlighted Prefix (Question / Key Topic) */}
+      {item.highlightPrefix && (
+        <span className="text-emerald-700 font-extrabold">
+          {item.highlightPrefix}
+        </span>
+      )}
+
+      {/* Main Text in Crisp Black */}
+      <span className="text-slate-950 font-semibold">
+        {item.text}
+      </span>
+
+      {/* Green Highlighted Suffix */}
+      {item.highlightSuffix && (
+        <span className="text-emerald-700 font-bold">
+          {item.highlightSuffix}
+        </span>
+      )}
+
+      {/* Green Action Link */}
+      {item.action && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            item.action?.();
+          }}
+          className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-extrabold shadow-2xs transition-colors"
+        >
+          {item.actionText}
+          <ChevronRight className="w-2.5 h-2.5" />
+        </button>
+      )}
+      <span className="text-emerald-600 font-bold select-none mx-1">✦</span>
+    </div>
+  );
+
   return (
     <>
       <div
-        className="relative z-30 w-full overflow-hidden bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-teal-950/95 border-b border-emerald-500/20 backdrop-blur-md shadow-inner"
+        className="relative z-30 w-full overflow-hidden bg-white/92 backdrop-blur-md border-b border-slate-200/90 shadow-xs font-anek-bangla"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
       >
-        <div className="flex items-center h-8 px-2">
-          {/* Left Badge - Clickable to view full 100 Q&A & As-Sunnah Directory */}
+        <div className="flex items-center h-9 px-2">
+          {/* Left Heading Highlighted in Red */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold z-10 mr-2 shadow-sm transition-colors"
-            title="নোটিশ বোর্ড, ১০০ প্রশ্নোত্তর ও আস-সুন্নাহ ফাউন্ডেশনের তথ্য দেখুন"
+            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-700 hover:to-rose-700 border border-red-400/80 text-white text-[10px] font-extrabold z-10 mr-2.5 shadow-md icon-3d-badge cc-light-swipe cc-light-swipe-continuous transition-transform active:scale-95"
+            title="ইসলামি বার্তা, ১০০ প্রশ্নোত্তর ও আস-সুন্নাহ ফাউন্ডেশনের তথ্য দেখুন"
           >
-            <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
-            <span className="tracking-wide">নোটিশ ও ১০০ প্রশ্নোত্তর</span>
+            <span className="w-2 h-2 rounded-full bg-white animate-ping relative z-[3]" />
+            <span className="tracking-wide relative z-[3] font-anek-bangla">জরুরি বার্তা ও ফতোয়া</span>
           </button>
 
-          {/* Marquee Container */}
-          <div className="flex-1 overflow-hidden relative whitespace-nowrap">
+          {/* Marquee Container — Distinct White Semi-Transparent Background with Black & Green Text */}
+          <div className="flex-1 overflow-hidden relative whitespace-nowrap py-1">
             <div
-              className={`inline-flex items-center gap-10 text-[11px] font-medium text-emerald-100 ${
+              className={`inline-flex items-center gap-10 text-xs ${
                 isPaused ? 'cursor-pointer' : ''
               }`}
               style={{
                 display: 'inline-flex',
-                // 115 items total -> ~950s linear scroll for comfortable reading speed
-                animation: 'marqueeScroll 950s linear infinite',
+                // Calm, natural reading pace (~2600s for full 115 items)
+                animation: 'marqueeScroll 2600s linear infinite',
                 animationPlayState: isPaused ? 'paused' : 'running',
               }}
             >
-              {allNoticeItems.map((item) => (
-                <div key={item.id} className="inline-flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-800/70 text-emerald-300 text-[9px] font-bold border border-emerald-600/30">
-                    {item.tag}
-                  </span>
-                  <span className="text-slate-100">{item.text}</span>
-                  {item.action && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        item.action?.();
-                      }}
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 text-emerald-200 text-[9px] font-bold underline transition-colors"
-                    >
-                      {item.actionText}
-                      <ChevronRight className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                  <span className="text-emerald-400/50 select-none">✦</span>
-                </div>
-              ))}
-
-              {/* Duplicate set for continuous loop */}
-              {allNoticeItems.map((item) => (
-                <div key={`dup-${item.id}`} className="inline-flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-800/70 text-emerald-300 text-[9px] font-bold border border-emerald-600/30">
-                    {item.tag}
-                  </span>
-                  <span className="text-slate-100">{item.text}</span>
-                  {item.action && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        item.action?.();
-                      }}
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/30 hover:bg-emerald-500/50 text-emerald-200 text-[9px] font-bold underline transition-colors"
-                    >
-                      {item.actionText}
-                      <ChevronRight className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                  <span className="text-emerald-400/50 select-none">✦</span>
-                </div>
-              ))}
+              {allNoticeItems.map((item) => renderNoticeEntry(item, 'main-'))}
+              {allNoticeItems.map((item) => renderNoticeEntry(item, 'dup-'))}
             </div>
           </div>
 
           {/* Right Open List & Close buttons */}
-          <div className="shrink-0 flex items-center gap-1 ml-1.5 z-10">
+          <div className="shrink-0 flex items-center gap-1 ml-1.5 z-10 bg-white/95 pl-1 rounded-l-lg">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="p-1 text-emerald-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+              className="p-1 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-full transition-colors"
               title="সকল প্রশ্নোত্তর ও আস-সুন্নাহ তালিকা খুলুন"
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5 stroke-[2.4]" />
             </button>
             <button
               onClick={() => setIsDismissed(true)}
-              className="p-1 text-slate-400 hover:text-slate-200 hover:bg-white/10 rounded-full transition-colors"
+              className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
               title="বিজ্ঞপ্তি বার লুকান"
             >
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5 stroke-[2.4]" />
             </button>
           </div>
         </div>
