@@ -652,7 +652,7 @@ export default function App() {
                   <div className="relative mb-3">
                     <div className="w-24 h-24 rounded-full ring-4 ring-emerald-500/60 p-1 bg-gradient-to-tr from-emerald-500 to-teal-400 shadow-xl overflow-hidden">
                       <img
-                        src="https://kommodo.ai/i/ejBnkf03L6j67RNAGz9e"
+                        src="https://www.image2url.com/r2/default/images/1793555532100-56f572a1-b617-499d-b07c-6f5c6a4987b8.jpg"
                         alt="Sakibul Islam Sabbir"
                         className="w-full h-full object-cover rounded-full"
                       />

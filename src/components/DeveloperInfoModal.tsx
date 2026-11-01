@@ -41,7 +41,7 @@ export const DeveloperInfoModal: React.FC<DeveloperInfoModalProps> = ({
     nameBn: 'সাকিবুল ইসলাম সাব্বির',
     headline: 'Full-Stack Developer & UI/UX Designer',
     subtitle: 'Founder & CEO, Bismahsoft',
-    avatarUrl: 'https://kommodo.ai/i/ejBnkf03L6j67RNAGz9e',
+    avatarUrl: 'https://www.image2url.com/r2/default/images/1793555532100-56f572a1-b617-499d-b07c-6f5c6a4987b8.jpg',
     bio1: 'Full-Stack Web Developer and UI/UX Designer focused on crafting clean, high-performance web applications with modern tech stacks.',
     bio2: 'Student at As-Sunnah Skill Development Institute (Small Business Management Course, Batch 29, Department of Creative).',
     email: 'sakibulislamsbmc@gmail.com',
