@@ -72,6 +72,7 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { ScrollingNotificationBar } from './components/ScrollingNotificationBar';
 import { BannerAdsCarousel } from './components/BannerAdsCarousel';
 import { DeveloperInfoModal } from './components/DeveloperInfoModal';
+import { RuqyahAudioSection } from './components/RuqyahAudioSection';
 
 import { Plus, UserCheck, ShieldCheck, Mail, Phone, ExternalLink, Code2 } from 'lucide-react';
 
@@ -613,99 +614,100 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 3: COMBINED MUHASABA & DIGITAL TASBEEH SECTION */}
-          {activeTab === 'muhasaba' && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-center pt-1 pb-1">
-                <h2 className="text-base font-extrabold text-slate-800">মুহাসাবা ও ডিজিটাল তাসবীহ</h2>
-                <p className="text-xs text-slate-500 font-medium">দৈনিক অগ্রগতি, সাপ্তাহিক গড়, মাসিক স্কোর ও তাসবীহ গণনা</p>
-              </div>
+          {/* TAB 3: COMBINED MUHASABA, DIGITAL TASBEEH & RUQYAH AUDIO/TEXT SECTION (Kept mounted for background playback) */}
+          <div className={activeTab === 'muhasaba' ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}>
+            <div className="text-center pt-1 pb-1">
+              <h2 className="text-base font-extrabold text-slate-800">মুহাসাবা, তাসবীহ ও রুকইয়াহ</h2>
+              <p className="text-xs text-slate-500 font-medium">দৈনিক অগ্রগতি, তাসবীহ গণনা এবং রুকইয়াহ অডিও ও টেক্সট</p>
+            </div>
 
-              <MuhasabaScoreCard
-                state={dayState}
-                allAmols={allAmols}
-                currentDateStr={currentDateStr}
-                onOpenReflection={() => setIsReflectionOpen(true)}
-                onOpenTasbeeh={() => setIsTasbeehOpen(true)}
-              />
+            <MuhasabaScoreCard
+              state={dayState}
+              allAmols={allAmols}
+              currentDateStr={currentDateStr}
+              onOpenReflection={() => setIsReflectionOpen(true)}
+              onOpenTasbeeh={() => setIsTasbeehOpen(true)}
+            />
 
-              {/* Unified Digital Tasbeeh Card inside Muhasaba Section */}
-              <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">📿</span>
-                    <div>
-                      <h3 className="text-sm font-extrabold text-slate-800">ডিজিটাল তাসবীহ ও জিকির</h3>
-                      <p className="text-[11px] text-slate-500 font-medium">ট্যাপ করে তাৎক্ষণিক জিকির গণনা করুন</p>
-                    </div>
+            {/* Unified Digital Tasbeeh Card inside Muhasaba Section */}
+            <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📿</span>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-800">ডিজিটাল তাসবীহ ও জিকির</h3>
+                    <p className="text-[11px] text-slate-500 font-medium">ট্যাপ করে তাৎক্ষণিক জিকির গণনা করুন</p>
                   </div>
-                  <button
-                    onClick={() => setIsTasbeehOpen(true)}
-                    className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold transition-colors"
-                  >
-                    ফুল-স্ক্রিন তাসবীহ
-                  </button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { key: 'subhanallah', label: 'সুবহানাল্লাহ', target: 33 },
-                    { key: 'alhamdulillah', label: 'আলহামদুলিল্লাহ', target: 33 },
-                    { key: 'allahuakbar', label: 'আল্লাহু আকবার', target: 34 },
-                    { key: 'astaghfirullah', label: 'আস্তাগফিরুল্লাহ', target: 100 },
-                    { key: 'durood', label: 'দরূদ শরীফ', target: 100 },
-                    { key: 'lailahaillallah', label: 'লা ইলাহা ইল্লাল্লাহ', target: 100 },
-                  ].map((dhikr) => {
-                    const count = dayState.tasbeehCounts[dhikr.key] || 0;
-                    return (
-                      <button
-                        key={dhikr.key}
-                        onClick={() => {
-                          if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                            navigator.vibrate(12);
-                          }
-                          handleUpdateTasbeehCounts({
-                            ...dayState.tasbeehCounts,
-                            [dhikr.key]: count + 1,
-                          });
-                        }}
-                        className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/80 active:scale-95 border border-emerald-200/80 flex items-center justify-between text-left transition-all cc-light-swipe"
-                      >
-                        <div>
-                          <p className="text-xs font-extrabold text-slate-800">{dhikr.label}</p>
-                          <p className="text-[10px] text-slate-500 font-semibold">লক্ষ্য: {dhikr.target}</p>
-                        </div>
-                        <span className="px-2 py-1 rounded-xl bg-emerald-600 text-white font-mono text-xs font-black shadow-xs">
-                          +{count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-800">মাসিক ও সাপ্তাহিক রিপোর্ট এক্সপোর্ট</h3>
-                  <button
-                    onClick={() => setIsProfileOpen(true)}
-                    className="text-xs font-bold text-emerald-600 hover:underline"
-                  >
-                    প্রোফাইল ড্যাশবোর্ড
-                  </button>
-                </div>
-                <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                  আপনার দৈনিক, সাপ্তাহিক (সপ্তাহ ১-৫) ও মাসিক রিপোর্ট Word (.docx), Excel (.xlsx), এবং হাই-রেজোলিউশন ইমেজ (.jpg) ফরম্যাটে ডাউনলোড করতে পারেন।
-                </p>
                 <button
-                  onClick={() => setIsExportOpen(true)}
-                  className="w-full py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition-all shadow-sm cc-light-swipe"
+                  onClick={() => setIsTasbeehOpen(true)}
+                  className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold transition-colors"
                 >
-                  রিপোর্ট ও এক্সপোর্ট সেন্টার খুলুন
+                  ফুল-স্ক্রিন তাসবীহ
                 </button>
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'subhanallah', label: 'সুবহানাল্লাহ', target: 33 },
+                  { key: 'alhamdulillah', label: 'আলহামদুলিল্লাহ', target: 33 },
+                  { key: 'allahuakbar', label: 'আল্লাহু আকবার', target: 34 },
+                  { key: 'astaghfirullah', label: 'আস্তাগফিরুল্লাহ', target: 100 },
+                  { key: 'durood', label: 'দরূদ শরীফ', target: 100 },
+                  { key: 'lailahaillallah', label: 'লা ইলাহা ইল্লাল্লাহ', target: 100 },
+                ].map((dhikr) => {
+                  const count = dayState.tasbeehCounts[dhikr.key] || 0;
+                  return (
+                    <button
+                      key={dhikr.key}
+                      onClick={() => {
+                        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                          navigator.vibrate(12);
+                        }
+                        handleUpdateTasbeehCounts({
+                          ...dayState.tasbeehCounts,
+                          [dhikr.key]: count + 1,
+                        });
+                      }}
+                      className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/80 active:scale-95 border border-emerald-200/80 flex items-center justify-between text-left transition-all cc-light-swipe"
+                    >
+                      <div>
+                        <p className="text-xs font-extrabold text-slate-800">{dhikr.label}</p>
+                        <p className="text-[10px] text-slate-500 font-semibold">লক্ষ্য: {dhikr.target}</p>
+                      </div>
+                      <span className="px-2 py-1 rounded-xl bg-emerald-600 text-white font-mono text-xs font-black shadow-xs">
+                        +{count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
+
+            {/* RUQYAH AUDIO & TEXT PLAYER SECTION (Matches Screenshot UI) */}
+            <RuqyahAudioSection />
+
+            <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-800">মাসিক ও সাপ্তাহিক রিপোর্ট এক্সপোর্ট</h3>
+                <button
+                  onClick={() => setIsProfileOpen(true)}
+                  className="text-xs font-bold text-emerald-600 hover:underline"
+                >
+                  প্রোফাইল ড্যাশবোর্ড
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                আপনার দৈনিক, সাপ্তাহিক (সপ্তাহ ১-৫) ও মাসিক রিপোর্ট Word (.docx), Excel (.xlsx), এবং হাই-রেজোলিউশন ইমেজ (.jpg) ফরম্যাটে ডাউনলোড করতে পারেন।
+              </p>
+              <button
+                onClick={() => setIsExportOpen(true)}
+                className="w-full py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition-all shadow-sm cc-light-swipe"
+              >
+                রিপোর্ট ও এক্সপোর্ট সেন্টার খুলুন
+              </button>
+            </div>
+          </div>
 
           {/* TAB 4: DEVELOPER INFORMATION SECTION */}
           {activeTab === 'developer' && (
