@@ -5,7 +5,8 @@ import {
   Calendar, 
   Plus, 
   Clock, 
-  AlertCircle 
+  ChevronDown, 
+  ChevronUp 
 } from 'lucide-react';
 import { AmolItem, AmolCategory, DayAmolState, PrayerSchedule } from '../types';
 import { CATEGORY_LABELS } from '../data/defaultAmols';
@@ -34,218 +35,253 @@ export const AmolCategorySection: React.FC<AmolCategorySectionProps> = ({
   onSyncSingleToCalendar,
   onOpenCustomAmolModal,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedInfoIds, setExpandedInfoIds] = useState<Record<string, boolean>>({});
   const meta = CATEGORY_LABELS[category];
 
-  const toggleInfo = (id: string) => {
+  const toggleInfo = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setExpandedInfoIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const completedCount = items.filter((item) => dayState.completedAmolIds.includes(item.id)).length;
-  const isAllComplete = items.length > 0 && completedCount === items.length;
+
+  const getPastelClass = (theme?: string) => {
+    switch (theme) {
+      case 'cyan':
+        return 'card-pastel-cyan';
+      case 'green':
+        return 'card-pastel-green';
+      case 'peach':
+        return 'card-pastel-peach';
+      case 'pink':
+        return 'card-pastel-pink';
+      case 'purple':
+        return 'card-pastel-purple';
+      case 'yellow':
+        return 'card-pastel-yellow';
+      default:
+        return 'card-pastel-cyan';
+    }
+  };
+
+  const getCategoryEmoji = (cat: AmolCategory) => {
+    switch (cat) {
+      case 'fard_salah':
+      case 'sunnah_nafl':
+        return '🌙';
+      case 'core_24':
+        return '✨';
+      case 'optional':
+        return '⭐';
+      case 'adhkar':
+        return '📿';
+      case 'quran':
+        return '📖';
+      case 'muhasaba_akhlaq':
+        return '🤝';
+      case 'family_relationships':
+        return '👥';
+      case 'custom':
+        return '📝';
+      default:
+        return '✨';
+    }
+  };
 
   return (
-    <div className="w-full glass-panel rounded-3xl p-4 bg-[#0a0a0a]/90 border border-white/10 transition-all duration-300">
+    <div className="w-full space-y-2.5">
       
-      {/* Category Header */}
-      <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-sm">
-            {category === 'fard_salah' && '🕌'}
-            {category === 'sunnah_nafl' && '🌙'}
-            {category === 'quran' && '📖'}
-            {category === 'adhkar' && '📿'}
-            {category === 'muhasaba_akhlaq' && '🛡️'}
-            {category === 'custom' && '✨'}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xs font-bold text-white tracking-wide">
-                {meta.bn}
-              </h2>
-              {isAllComplete && (
-                <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-semibold border border-emerald-500/30">
-                  সম্পূর্ণ
-                </span>
-              )}
-            </div>
-            <p className="text-[10px] text-zinc-400">{meta.en}</p>
-          </div>
+      {/* Category Header Row */}
+      <div 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="flex items-center justify-between py-1 cursor-pointer select-none group"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{getCategoryEmoji(category)}</span>
+          <h3 className="text-base font-extrabold text-slate-800 tracking-tight">
+            {meta.bn}
+          </h3>
+          <span className="text-xs font-semibold text-slate-400">
+            ({completedCount}/{items.length})
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-white/5 border border-white/5 text-zinc-300">
-            {completedCount}/{items.length}
-          </span>
-
           {category === 'custom' && onOpenCustomAmolModal && (
             <button
-              onClick={onOpenCustomAmolModal}
-              className="p-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold flex items-center gap-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCustomAmolModal();
+              }}
+              className="p-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-xs font-semibold flex items-center gap-1"
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" />
               <span>যোগ</span>
             </button>
           )}
+
+          <button className="text-slate-400 group-hover:text-slate-600 transition-colors">
+            {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+          </button>
         </div>
       </div>
 
-      {/* Items List */}
-      <div className="space-y-2.5">
-        {items.map((item) => {
-          const isCompleted = dayState.completedAmolIds.includes(item.id);
-          const isInfoOpen = !!expandedInfoIds[item.id];
-          const remark = dayState.amolRemarks?.[item.id];
-          const timeGateStatus = checkAmolTimeWindow(item, schedule, currentDateStr);
+      {/* Amol Items List (Collapsible) */}
+      {!isCollapsed && (
+        <div className="space-y-2.5">
+          {items.map((item) => {
+            const isCompleted = dayState.completedAmolIds.includes(item.id);
+            const isInfoOpen = !!expandedInfoIds[item.id];
+            const remark = dayState.amolRemarks?.[item.id];
+            const timeGateStatus = checkAmolTimeWindow(item, schedule, currentDateStr);
+            const pastelBg = getPastelClass(item.pastelTheme);
 
-          return (
-            <div
-              key={item.id}
-              className={`rounded-2xl transition-all duration-200 border p-3 ${
-                isCompleted
-                  ? 'bg-emerald-950/25 border-emerald-500/30 shadow-sm'
-                  : 'bg-white/5 hover:bg-white/[0.07] border-white/5'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2.5">
-                
-                {/* Main Checkbox & Title */}
-                <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                  <button
-                    onClick={() => onAttemptToggleAmol(item)}
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200 ${
-                      isCompleted
-                        ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-black shadow-md shadow-emerald-950/60 scale-105'
-                        : 'border border-white/20 hover:border-emerald-400/80 bg-black/40'
-                    }`}
-                  >
-                    {isCompleted && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </button>
-
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onAttemptToggleAmol(item)}>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h4
-                        className={`text-xs font-semibold leading-tight transition-all ${
-                          isCompleted ? 'text-zinc-400 line-through' : 'text-white'
-                        }`}
-                      >
-                        {item.titleBn}
-                      </h4>
-
-                      {/* Late badge if completed late with reason */}
-                      {remark && remark.wasLate && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-medium">
-                          বিলম্বিত
-                        </span>
-                      )}
-
-                      {/* Time Window Indicator */}
-                      {item.timeWindow && item.timeWindow.startWaqt !== 'all_day' && !isCompleted && (
-                        <span 
-                          className={`text-[9px] px-1.5 py-0.2 rounded flex items-center gap-0.5 ${
-                            timeGateStatus.wasLate
-                              ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
-                              : timeGateStatus.isWithinWindow
-                              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-white/5 text-zinc-400 border border-white/5'
-                          }`}
-                        >
-                          <Clock className="w-2.5 h-2.5" />
-                          <span>
-                            {timeGateStatus.wasLate ? 'ওয়াক্ত অতিক্রান্ত' : timeGateStatus.isWithinWindow ? 'ওয়াক্ত চলছে' : 'আসন্ন ওয়াক্ত'}
-                          </span>
-                        </span>
-                      )}
+            return (
+              <div
+                key={item.id}
+                className={`w-full rounded-2xl sm:rounded-3xl p-3 sm:p-3.5 transition-all shadow-sm ${pastelBg} relative overflow-hidden`}
+              >
+                <div 
+                  onClick={() => onAttemptToggleAmol(item)}
+                  className="flex items-center justify-between gap-3 cursor-pointer"
+                >
+                  
+                  {/* Left: Icon Pill + Title */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-white/80 shadow-sm flex items-center justify-center text-base shrink-0 border border-white">
+                      {item.iconEmoji || '✨'}
                     </div>
 
-                    <p className="text-[11px] text-zinc-400 mt-0.5 leading-snug">
-                      {item.descriptionBn}
-                    </p>
-
-                    {/* Display recorded late reason if exists */}
-                    {remark && remark.reason && (
-                      <p className="text-[10px] text-amber-300/90 mt-1 italic">
-                        📝 বিলম্বে আদায়ের কারণ: {remark.reason}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right controls: Info & Calendar */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {item.hadithOrVirtue && (
-                    <button
-                      onClick={() => toggleInfo(item.id)}
-                      className={`p-1 rounded-lg transition-colors ${
-                        isInfoOpen ? 'bg-white/10 text-emerald-300' : 'text-zinc-500 hover:text-zinc-300'
-                      }`}
-                      title="ফযীলত ও হাদীস"
-                    >
-                      <Info className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  {item.calendarSyncDefault && onSyncSingleToCalendar && (
-                    <button
-                      onClick={() => onSyncSingleToCalendar(item)}
-                      className="p-1 rounded-lg text-zinc-500 hover:text-emerald-300 transition-colors"
-                      title="ক্যালেন্ডারে যোগ"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-              </div>
-
-              {/* Sub-tasks if any (e.g. জামাত, তাকবীরে উলা) */}
-              {item.subTasks && item.subTasks.length > 0 && (
-                <div className="mt-2.5 pt-2 border-t border-white/5 pl-8 flex flex-wrap gap-1.5">
-                  {item.subTasks.map((sub) => {
-                    const isSubDone = dayState.subTaskCompletedIds.includes(sub.id);
-                    return (
-                      <button
-                        key={sub.id}
-                        onClick={() => onToggleSubTask(sub.id, item.id)}
-                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
-                          isSubDone
-                            ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-200'
-                            : 'bg-black/30 hover:bg-white/5 border border-white/5 text-zinc-400'
-                        }`}
-                      >
-                        <div
-                          className={`w-3 h-3 rounded flex items-center justify-center ${
-                            isSubDone ? 'bg-emerald-400 text-black' : 'border border-zinc-600'
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4
+                          className={`text-sm font-bold tracking-tight transition-all leading-tight ${
+                            isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'
                           }`}
                         >
-                          {isSubDone && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                        </div>
-                        <span>{sub.titleBn}</span>
-                        <span className="text-[9px] text-zinc-500">+{sub.points}</span>
+                          {item.titleBn}
+                        </h4>
+
+                        {/* Late indicator badge */}
+                        {remark && remark.wasLate && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-200 font-semibold">
+                            বিলম্বিত
+                          </span>
+                        )}
+
+                        {/* Time window status tag */}
+                        {item.timeWindow && item.timeWindow.startWaqt !== 'all_day' && !isCompleted && (
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded-full flex items-center gap-0.5 font-medium ${
+                              timeGateStatus.wasLate
+                                ? 'bg-amber-100 text-amber-800'
+                                : timeGateStatus.isWithinWindow
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            <Clock className="w-2.5 h-2.5" />
+                            <span>{timeGateStatus.wasLate ? 'ওয়াক্ত অতিক্রান্ত' : 'ওয়াক্ত চলছে'}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Late reason if recorded */}
+                      {remark && remark.reason && (
+                        <p className="text-[10px] text-amber-900/80 mt-0.5 truncate italic font-medium">
+                          কারণ: {remark.reason}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Big Clean Checkbox Circle */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {item.hadithOrVirtue && (
+                      <button
+                        onClick={(e) => toggleInfo(item.id, e)}
+                        className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                        title="ফযীলত ও দলীল"
+                      >
+                        <Info className="w-4 h-4" />
                       </button>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
 
-              {/* Collapsible Hadith note */}
-              {isInfoOpen && item.hadithOrVirtue && (
-                <div className="mt-2 p-2 rounded-xl bg-white/5 border border-white/10 text-[10px] text-zinc-300 leading-relaxed italic animate-in fade-in duration-150">
-                  <span className="font-semibold text-emerald-300 not-italic">হাদীস বাণী: </span>
-                  {item.hadithOrVirtue}
-                </div>
-              )}
+                    {item.calendarSyncDefault && onSyncSingleToCalendar && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSyncSingleToCalendar(item);
+                        }}
+                        className="p-1 rounded-full text-slate-400 hover:text-emerald-600 transition-colors"
+                        title="গুগল ক্যালেন্ডারে যোগ"
+                      >
+                        <Calendar className="w-4 h-4" />
+                      </button>
+                    )}
 
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                        isCompleted
+                          ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300'
+                          : 'border-2 border-slate-400 hover:border-emerald-500 bg-white/70'
+                      }`}
+                    >
+                      {isCompleted && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Sub-tasks (e.g. জামাতে সালাত, তাকবীরে উলা) */}
+                {item.subTasks && item.subTasks.length > 0 && (
+                  <div className="mt-2.5 pt-2 border-t border-black/5 pl-12 flex flex-wrap gap-1.5">
+                    {item.subTasks.map((sub) => {
+                      const isSubDone = dayState.subTaskCompletedIds.includes(sub.id);
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => onToggleSubTask(sub.id, item.id)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all ${
+                            isSubDone
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'bg-white/80 hover:bg-white text-slate-700 border border-slate-200/60'
+                          }`}
+                        >
+                          <div
+                            className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${
+                              isSubDone ? 'bg-white text-emerald-700' : 'border border-slate-400'
+                            }`}
+                          >
+                            {isSubDone && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                          </div>
+                          <span>{sub.titleBn}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Hadith / Virtue Drawer */}
+                {isInfoOpen && item.hadithOrVirtue && (
+                  <div className="mt-2.5 p-2.5 rounded-2xl bg-white/90 text-xs text-slate-700 leading-relaxed border border-white shadow-sm">
+                    <p className="font-bold text-slate-900 mb-0.5">দলীল ও ফযীলত:</p>
+                    <p className="italic">{item.hadithOrVirtue}</p>
+                  </div>
+                )}
+
+              </div>
+            );
+          })}
+
+          {items.length === 0 && (
+            <div className="text-center py-4 text-slate-400 text-xs">
+              এই ক্যাটাগরিতে এখনও কোনো আমল নেই।
             </div>
-          );
-        })}
-
-        {items.length === 0 && (
-          <div className="text-center py-4 text-zinc-500 text-xs">
-            এই ক্যাটাগরিতে এখনও কোনো আমল নেই।
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
     </div>
   );

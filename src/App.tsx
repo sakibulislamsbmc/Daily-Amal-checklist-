@@ -12,14 +12,17 @@ import {
   getAccessToken 
 } from './firebase';
 import { 
-  DEFAULT_AMOLS, 
+  PRAYER_AMOLS, 
+  CORE_24_AMOLS, 
+  OPTIONAL_AMOLS, 
   CATEGORY_LABELS 
 } from './data/defaultAmols';
 import { 
   AmolItem, 
   AmolCategory, 
   DayAmolState, 
-  TrafficStats 
+  TrafficStats,
+  UserProfileData 
 } from './types';
 import { 
   getTodayDateInBD, 
@@ -37,12 +40,24 @@ import {
   loadCustomAmols, 
   saveCustomAmol 
 } from './services/amolStorage';
+import { 
+  getLocalUserProfile, 
+  loadEnabledOptionalIds, 
+  saveEnabledOptionalIds, 
+  subscribeToUserProfile,
+  saveUserProfile 
+} from './services/userService';
 import { createCalendarEvent } from './services/calendar';
 
 import { Navbar } from './components/Navbar';
+import { HorizontalWeekCalendar } from './components/HorizontalWeekCalendar';
+import { ReferenceProgressCard } from './components/ReferenceProgressCard';
+import { NotificationToggleBar } from './components/NotificationToggleBar';
 import { PrayerTimeBanner } from './components/PrayerTimeBanner';
 import { MuhasabaScoreCard } from './components/MuhasabaScoreCard';
 import { AmolCategorySection } from './components/AmolCategorySection';
+import { OptionalAmolsSection } from './components/OptionalAmolsSection';
+import { ProfileDashboardModal } from './components/ProfileDashboardModal';
 import { DigitalTasbeehModal } from './components/DigitalTasbeehModal';
 import { GoogleCalendarSyncModal } from './components/GoogleCalendarSyncModal';
 import { MuhasabaReflectionModal } from './components/MuhasabaReflectionModal';
@@ -51,23 +66,18 @@ import { LateSubmissionModal } from './components/LateSubmissionModal';
 import { ExportModal } from './components/ExportModal';
 import { MobileBottomNav, MobileTab } from './components/MobileBottomNav';
 
-import { 
-  Filter, 
-  Plus, 
-  Calendar as CalendarIcon, 
-  RotateCcw,
-  Sparkles,
-  Download,
-  Clock,
-  CheckSquare
-} from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export default function App() {
   const [currentDateStr, setCurrentDateStr] = useState<string>(() => getTodayDateInBD());
   const [selectedDistrict, setSelectedDistrict] = useState<string>('dhaka');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Active Mobile View Tab
+  // User Profile from Firebase & Cache
+  const [userProfile, setUserProfile] = useState<UserProfileData | null>(() => getLocalUserProfile());
+  const [enabledOptionalIds, setEnabledOptionalIds] = useState<string[]>(() => loadEnabledOptionalIds());
+
+  // Active Tab
   const [activeTab, setActiveTab] = useState<MobileTab>('checklist');
 
   // Traffic & Visitor counter
@@ -76,25 +86,35 @@ export default function App() {
     isLive: true,
   });
 
-  // Amol items & active day state
+  // Custom amol items & active day state
   const [customAmols, setCustomAmols] = useState<AmolItem[]>(() => loadCustomAmols());
   const [dayState, setDayState] = useState<DayAmolState>(() => loadDayStateLocal(currentDateStr));
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState<AmolCategory | 'all'>('all');
 
   // Modals
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isTasbeehOpen, setIsTasbeehOpen] = useState(false);
   const [isCalendarSyncOpen, setIsCalendarSyncOpen] = useState(false);
   const [isReflectionOpen, setIsReflectionOpen] = useState(false);
   const [isCustomAmolOpen, setIsCustomAmolOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
-  // Time-gated late submission flow
+  // Time-gated late submission modal
   const [lateModalItem, setLateModalItem] = useState<{ item: AmolItem; explanation: string } | null>(null);
 
-  // All Amols combined
+  // Active Optional Amols enabled by user
+  const activeOptionalAmols = useMemo(() => {
+    return OPTIONAL_AMOLS.filter((opt) => enabledOptionalIds.includes(opt.id));
+  }, [enabledOptionalIds]);
+
+  // All Amols combined (5 Prayers + 24 Core + Enabled Optionals + Custom)
   const allAmols = useMemo(() => {
-    return [...DEFAULT_AMOLS, ...customAmols];
-  }, [customAmols]);
+    return [
+      ...PRAYER_AMOLS,
+      ...CORE_24_AMOLS,
+      ...activeOptionalAmols,
+      ...customAmols,
+    ];
+  }, [activeOptionalAmols, customAmols]);
 
   // Hanafi Bangladesh Prayer Times Schedule
   const prayerSchedule = useMemo(() => {
@@ -124,6 +144,22 @@ export default function App() {
     };
   }, []);
 
+  // Listen to User Profile when logged in
+  useEffect(() => {
+    if (currentUser) {
+      const unsubProfile = subscribeToUserProfile(currentUser.uid, (profile) => {
+        setUserProfile(profile);
+        if (profile.district) {
+          setSelectedDistrict(profile.district);
+        }
+        if (profile.enabledOptionalIds) {
+          setEnabledOptionalIds(profile.enabledOptionalIds);
+        }
+      });
+      return () => unsubProfile();
+    }
+  }, [currentUser]);
+
   // Sync state on date or user change
   useEffect(() => {
     const local = loadDayStateLocal(currentDateStr);
@@ -143,7 +179,7 @@ export default function App() {
     if (dayState.completedAmolIds.length > 0) {
       streak += 1;
     }
-    for (let i = 1; i <= 14; i++) {
+    for (let i = 1; i <= 30; i++) {
       const pastDate = getTodayDateInBD(-i);
       const past = loadDayStateLocal(pastDate);
       if (past && past.completedAmolIds && past.completedAmolIds.length > 0) {
@@ -155,11 +191,21 @@ export default function App() {
     return streak;
   }, [dayState, currentDateStr]);
 
-  // Attempt to Toggle Amol with Time-Gating Check
+  // Toggle Optional Amol (Add / Remove from Daily Checklist)
+  const handleToggleOptionalAmol = (amolId: string) => {
+    const updated = enabledOptionalIds.includes(amolId)
+      ? enabledOptionalIds.filter((id) => id !== amolId)
+      : [...enabledOptionalIds, amolId];
+
+    setEnabledOptionalIds(updated);
+    saveEnabledOptionalIds(updated, currentUser?.uid);
+  };
+
+  // Handle Amol Toggle with Strict Calendar Date & Time-Gating Check
   const handleAttemptToggleAmol = (item: AmolItem) => {
     const isAlreadyDone = dayState.completedAmolIds.includes(item.id);
 
-    // If unchecking, simply remove without modal
+    // If unchecking: allow direct removal
     if (isAlreadyDone) {
       setDayState((prev) => {
         const newCompleted = prev.completedAmolIds.filter((id) => id !== item.id);
@@ -179,22 +225,36 @@ export default function App() {
       return;
     }
 
-    // Checking off: verify time gating window
+    const todayStr = getTodayDateInBD();
+
+    // 1. FUTURE DATE GATING: Cannot fill deeds in advance!
+    if (currentDateStr > todayStr) {
+      alert(`ভবিষ্যতের তারিখের (${currentDateStr}) আমল অগ্রিম পূরণ করা সম্ভব নয়। কেবল আজকের (${todayStr}) আমল করা যাবে।`);
+      return;
+    }
+
+    // 2. PREVIOUS DATE GATING: Cannot be filled normally today; requires late reason/reflection note!
+    if (currentDateStr < todayStr) {
+      setLateModalItem({
+        item,
+        explanation: `আপনি পূর্ববর্তী তারিখের (${currentDateStr}) আমল জমা দিচ্ছেন। অতীতের আমল লিপিবদ্ধ করতে অনুগ্রহ করে কারণ বা আত্মোপলব্ধি (মুহাসাবা নোট) লিখুন।`,
+      });
+      return;
+    }
+
+    // 3. TODAY'S DATE GATING: Must be done on time. If submitting after deadline, note is required!
     const timeGate = checkAmolTimeWindow(item, prayerSchedule, currentDateStr);
 
     if (timeGate.wasLate) {
-      // Trigger Late-Filing Reason Modal
       setLateModalItem({
         item,
-        explanation: timeGate.windowExplanationBn,
+        explanation: timeGate.windowExplanationBn || 'ওয়াক্ত বা নির্ধারিত সময় অতিক্রান্ত হয়েছে। দেরিতে সম্পন্ন করার কারণ বা আত্মোপলব্ধি উল্লেখ আবশ্যক।',
       });
     } else {
-      // On-time checkoff
       applyAmolCheck(item.id, '', false);
     }
   };
 
-  // Finalize amol checkoff
   const applyAmolCheck = (amolId: string, lateReason: string = '', wasLate: boolean = false) => {
     setDayState((prev) => {
       const newCompleted = [...prev.completedAmolIds, amolId];
@@ -219,7 +279,6 @@ export default function App() {
     });
   };
 
-  // Toggle Sub-Task
   const handleToggleSubTask = (subId: string, parentAmolId: string) => {
     setDayState((prev) => {
       const isDone = prev.subTaskCompletedIds.includes(subId);
@@ -314,14 +373,13 @@ export default function App() {
     }
   };
 
-  const categoriesToRender: AmolCategory[] = useMemo(() => {
-    if (activeCategoryFilter === 'all') {
-      return ['fard_salah', 'sunnah_nafl', 'quran', 'adhkar', 'muhasaba_akhlaq', 'custom'];
-    }
-    return [activeCategoryFilter];
-  }, [activeCategoryFilter]);
+  // Categories in order of UI display
+  const categoriesToRender: AmolCategory[] = [
+    'fard_salah',
+    'core_24',
+    'custom'
+  ];
 
-  // Tab switching routing
   const handleTabChange = (tab: MobileTab) => {
     if (tab === 'tasbeeh') {
       setIsTasbeehOpen(true);
@@ -335,20 +393,20 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex justify-center items-center sm:py-6 selection:bg-emerald-500 selection:text-black font-['Hind_Siliguri']">
+    <div className="min-h-screen bg-[#E2E8F0] text-slate-800 flex justify-center items-center sm:py-6 selection:bg-emerald-500 selection:text-white font-['Hind_Siliguri']">
       
-      {/* Constrained Ultra-Modern Mobile Device Container (430px / max-w-md) */}
+      {/* Centered Mobile Device Frame (430px) Matching Reference Exactly */}
       <div className="mobile-device-shell flex flex-col no-scrollbar">
         
-        {/* Mobile Camera Notch / Dynamic Island Simulator */}
+        {/* Top Speaker Notch on Desktop */}
         <div className="hidden sm:flex justify-center pt-2 pb-1 shrink-0 z-50">
-          <div className="w-24 h-4 rounded-full bg-black border border-white/10 flex items-center justify-end px-3 gap-1.5 shadow-inner">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80"></span>
-            <span className="w-2 h-2 rounded-full bg-[#151515] border border-white/15"></span>
+          <div className="w-24 h-4 rounded-full bg-slate-900 flex items-center justify-end px-3 gap-1.5 shadow-inner">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="w-2 h-2 rounded-full bg-slate-800 border border-slate-700"></span>
           </div>
         </div>
 
-        {/* Apple Glassmorphic Navbar */}
+        {/* Top Header Navbar with Profile Dashboard Trigger */}
         <Navbar
           currentDateStr={currentDateStr}
           onDateChange={setCurrentDateStr}
@@ -356,97 +414,115 @@ export default function App() {
           trafficStats={trafficStats}
           streakCount={streakCount}
           onOpenCalendarSync={() => setIsCalendarSyncOpen(true)}
+          onOpenStats={() => setActiveTab('muhasaba')}
+          onOpenProfile={() => setIsProfileOpen(true)}
         />
 
-        {/* Main Content Area */}
-        <div className="flex-1 px-3.5 py-4 space-y-4 pb-24 overflow-y-auto no-scrollbar">
+        {/* Main Scrollable Body */}
+        <div className="flex-1 px-4 py-4 space-y-4 pb-24 overflow-y-auto no-scrollbar">
           
-          {/* TAB 1: CHECKLIST VIEW */}
+          {/* TAB 1: CHECKLIST (REFERENCE UI LAYOUT) */}
           {activeTab === 'checklist' && (
             <>
-              {/* Compact Hanafi Prayer Banner */}
-              <PrayerTimeBanner
-                schedule={prayerSchedule}
-                selectedDistrict={selectedDistrict}
-                onDistrictChange={setSelectedDistrict}
-                onOpenCalendarSync={() => setIsCalendarSyncOpen(true)}
+              {/* 1. Horizontal Week Calendar (Sun 1, Mon 2, etc.) */}
+              <HorizontalWeekCalendar
+                currentDateStr={currentDateStr}
+                onDateChange={setCurrentDateStr}
+                streakCount={streakCount}
               />
 
-              {/* Muhasaba Score Card with 3 Metrics */}
-              <MuhasabaScoreCard
+              {/* Date Status Banner for Past or Future Date */}
+              {currentDateStr !== getTodayDateInBD() && (
+                <div
+                  className={`p-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between border ${
+                    currentDateStr > getTodayDateInBD()
+                      ? 'bg-amber-50 text-amber-900 border-amber-200'
+                      : 'bg-blue-50 text-blue-900 border-blue-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm">
+                      {currentDateStr > getTodayDateInBD() ? '⚠️' : '🕒'}
+                    </span>
+                    <span className="truncate">
+                      {currentDateStr > getTodayDateInBD()
+                        ? `ভবিষ্যতের তারিখ (${currentDateStr}) — অগ্রিম পূরণ বন্ধ`
+                        : `পূর্ববর্তী তারিখ (${currentDateStr}) — জমা দিতে নোট আবশ্যক`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setCurrentDateStr(getTodayDateInBD())}
+                    className="shrink-0 px-2 py-0.5 rounded-lg bg-white/90 hover:bg-white text-[10px] font-bold shadow-xs border border-black/5 text-slate-700"
+                  >
+                    আজকে ফিরুন
+                  </button>
+                </div>
+              )}
+
+              {/* 2. Terracotta Progress Card (আজকের অগ্রগতি • ০ সম্পন্ন • ৪৬ বাকি) */}
+              <ReferenceProgressCard
                 state={dayState}
                 allAmols={allAmols}
-                currentDateStr={currentDateStr}
-                onOpenReflection={() => setIsReflectionOpen(true)}
-                onOpenTasbeeh={() => setIsTasbeehOpen(true)}
+                onOpenMuhasabaDetails={() => setActiveTab('muhasaba')}
               />
 
-              {/* Category Filter Chips */}
-              <div className="flex items-center justify-between gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setActiveCategoryFilter('all')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                      activeCategoryFilter === 'all'
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-bold shadow-md'
-                        : 'bg-white/5 border border-white/5 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    সব ({allAmols.length})
-                  </button>
+              {/* 3. Daily Notification Toggle Bar */}
+              <NotificationToggleBar />
 
-                  {(['fard_salah', 'sunnah_nafl', 'quran', 'adhkar', 'muhasaba_akhlaq', 'custom'] as AmolCategory[]).map((cat) => {
-                    const label = CATEGORY_LABELS[cat];
-                    const count = allAmols.filter((x) => x.category === cat).length;
-                    const isActive = activeCategoryFilter === cat;
+              {/* 4. Categorized Amol Sections with Pastel Cards */}
+              <div className="space-y-5 pt-1">
+                
+                {/* Five Obligatory Prayers */}
+                <AmolCategorySection
+                  key="fard_salah"
+                  category="fard_salah"
+                  items={PRAYER_AMOLS}
+                  dayState={dayState}
+                  schedule={prayerSchedule}
+                  currentDateStr={currentDateStr}
+                  onAttemptToggleAmol={handleAttemptToggleAmol}
+                  onToggleSubTask={handleToggleSubTask}
+                  onSyncSingleToCalendar={handleSyncSingleToCalendar}
+                />
 
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => setActiveCategoryFilter(cat)}
-                        className={`px-2.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                          isActive
-                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-bold shadow-md'
-                            : 'bg-white/5 border border-white/5 text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        <span>{label.bn.split(' ')[0]}</span>
-                        <span className="ml-1 text-[10px] opacity-70">({count})</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* The 24 Core Daily Listed Amols (Sequential 1 to 24) */}
+                <AmolCategorySection
+                  key="core_24"
+                  category="core_24"
+                  items={CORE_24_AMOLS}
+                  dayState={dayState}
+                  schedule={prayerSchedule}
+                  currentDateStr={currentDateStr}
+                  onAttemptToggleAmol={handleAttemptToggleAmol}
+                  onToggleSubTask={handleToggleSubTask}
+                  onSyncSingleToCalendar={handleSyncSingleToCalendar}
+                />
 
-                <button
-                  onClick={() => setIsCustomAmolOpen(true)}
-                  className="p-1.5 rounded-xl bg-white/5 text-emerald-400 border border-white/10 shrink-0"
-                  title="নতুন আমল যোগ করুন"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                {/* Separate Optional Practices Pool (User can add/toggle) */}
+                <OptionalAmolsSection
+                  enabledOptionalIds={enabledOptionalIds}
+                  dayState={dayState}
+                  schedule={prayerSchedule}
+                  currentDateStr={currentDateStr}
+                  onAttemptToggleAmol={handleAttemptToggleAmol}
+                  onOpenManageModal={() => setIsProfileOpen(true)}
+                />
 
-              {/* Amol Sections with Time Gating */}
-              <div className="space-y-4">
-                {categoriesToRender.map((cat) => {
-                  const items = allAmols.filter((a) => a.category === cat);
-                  if (items.length === 0 && cat !== 'custom') return null;
+                {/* Custom User-Added Amols */}
+                {customAmols.length > 0 && (
+                  <AmolCategorySection
+                    key="custom"
+                    category="custom"
+                    items={customAmols}
+                    dayState={dayState}
+                    schedule={prayerSchedule}
+                    currentDateStr={currentDateStr}
+                    onAttemptToggleAmol={handleAttemptToggleAmol}
+                    onToggleSubTask={handleToggleSubTask}
+                    onOpenCustomAmolModal={() => setIsCustomAmolOpen(true)}
+                  />
+                )}
 
-                  return (
-                    <AmolCategorySection
-                      key={cat}
-                      category={cat}
-                      items={items}
-                      dayState={dayState}
-                      schedule={prayerSchedule}
-                      currentDateStr={currentDateStr}
-                      onAttemptToggleAmol={handleAttemptToggleAmol}
-                      onToggleSubTask={handleToggleSubTask}
-                      onSyncSingleToCalendar={handleSyncSingleToCalendar}
-                      onOpenCustomAmolModal={() => setIsCustomAmolOpen(true)}
-                    />
-                  );
-                })}
               </div>
             </>
           )}
@@ -454,28 +530,33 @@ export default function App() {
           {/* TAB 2: PRAYERS & SPLIT JAMAT VIEW */}
           {activeTab === 'prayers' && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-center pt-2 pb-1">
-                <h2 className="text-base font-extrabold text-white">ওয়াক্ত ও জামাত সময়সূচী</h2>
-                <p className="text-xs text-zinc-400 mt-0.5">বাংলাদেশ সময় (Asia/Dhaka) • হানাফী আসর পদ্ধতি</p>
+              <div className="text-center pt-1 pb-1">
+                <h2 className="text-base font-extrabold text-slate-800">ওয়াক্ত ও জামাত সময়সূচী</h2>
+                <p className="text-xs text-slate-500 font-medium">বাংলাদেশ সময় (Asia/Dhaka) • হানাফী আসর পদ্ধতি</p>
               </div>
 
               <PrayerTimeBanner
                 schedule={prayerSchedule}
                 selectedDistrict={selectedDistrict}
-                onDistrictChange={setSelectedDistrict}
+                onDistrictChange={(dist) => {
+                  setSelectedDistrict(dist);
+                  if (currentUser) {
+                    saveUserProfile(currentUser.uid, { district: dist });
+                  }
+                }}
                 onOpenCalendarSync={() => setIsCalendarSyncOpen(true)}
               />
 
-              <div className="p-4 rounded-3xl glass-panel bg-white/5 border border-white/10 space-y-3">
-                <h3 className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+              <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
+                <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
                   হানাফী আসর ও জামাত বিধান
                 </h3>
-                <p className="text-xs text-zinc-300 leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
                   ইমামে আযম আবু হানিফা (রহ.) এর সিদ্ধান্ত অনুযায়ী বস্তুর ছায়া দ্বিগুণ (২ গুণ) হলে আসরের ওয়াক্ত শুরু হয়। বাংলাদেশে প্রচলিত সকল মসজিদে এই ওয়াক্ত ও জামাত কঠোরভাবে অনুসরণ করা হয়।
                 </p>
                 <button
                   onClick={() => setIsCalendarSyncOpen(true)}
-                  className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-bold text-xs shadow-md cc-light-swipe"
+                  className="w-full py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all cc-light-swipe"
                 >
                   গুগল ক্যালেন্ডারে সব ওয়াক্ত সিঙ্ক করুন
                 </button>
@@ -486,9 +567,9 @@ export default function App() {
           {/* TAB 3: MUHASABA DASHBOARD */}
           {activeTab === 'muhasaba' && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-center pt-2 pb-1">
-                <h2 className="text-base font-extrabold text-white">দৈনিক ও মাসিক মুহাসাবা</h2>
-                <p className="text-xs text-zinc-400 mt-0.5">১০০ পয়েন্ট ভিত্তিক আত্মশুদ্ধি ও ধারাবাহিকতা পরিমাপ</p>
+              <div className="text-center pt-1 pb-1">
+                <h2 className="text-base font-extrabold text-slate-800">মুহাসাবা স্কোর ও বিশ্লেষণ</h2>
+                <p className="text-xs text-slate-500 font-medium">দৈনিক অগ্রগতি, সাপ্তাহিক গড় ও মাসিক সামগ্রিক স্কোর</p>
               </div>
 
               <MuhasabaScoreCard
@@ -499,36 +580,64 @@ export default function App() {
                 onOpenTasbeeh={() => setIsTasbeehOpen(true)}
               />
 
-              <div className="p-4 rounded-3xl glass-panel bg-[#0c0c0c] border border-white/10 space-y-3">
+              <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-white">মাসিক রিপোর্ট ও বিশ্লেষণ</h3>
+                  <h3 className="text-xs font-bold text-slate-800">মাসিক রিপোর্ট ও প্রোফাইল</h3>
                   <button
-                    onClick={() => setIsExportOpen(true)}
-                    className="text-xs font-semibold text-emerald-400 hover:underline flex items-center gap-1"
+                    onClick={() => setIsProfileOpen(true)}
+                    className="text-xs font-bold text-emerald-600 hover:underline"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>এক্সপোর্ট সেন্টার</span>
+                    প্রোফাইল ড্যাশবোর্ড
                   </button>
                 </div>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  আপনার মাসিক রিপোর্ট Word (.docx), Excel (.xlsx), এবং হাই-রেজোলিউশন ইমেজ (.jpg) ফরম্যাটে ডাউনলোড করে সংরক্ষণ ও পর্যালোচনা করুন।
+                <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                  আপনার মাসিক রিপোর্ট Word (.docx), Excel (.xlsx), এবং হাই-রেজোলিউশন ইমেজ (.jpg) ফরম্যাটে ডাউনলোড করতে পারেন।
                 </p>
+                <button
+                  onClick={() => setIsExportOpen(true)}
+                  className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all"
+                >
+                  এক্সপোর্ট সেন্টার খুলুন
+                </button>
               </div>
             </div>
           )}
 
-          {/* Hadith Quote */}
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 text-center text-xs text-zinc-400 italic">
-            “তোমাদের হিসাব নেওয়ার পূর্বে তোমরা নিজেদের হিসাব নাও...” — হযরত উমর (রা.)
-          </div>
-
         </div>
 
-        {/* Floating iOS-Style Glassmorphic Bottom Navigation Bar */}
+        {/* Floating Action Button (Green + Circle as in Reference Image) */}
+        {activeTab === 'checklist' && (
+          <button
+            onClick={() => setIsCustomAmolOpen(true)}
+            className="absolute bottom-20 right-5 z-40 w-13 h-13 rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white shadow-xl shadow-emerald-600/40 flex items-center justify-center transition-all cc-light-swipe"
+            title="নতুন অভ্যাস / আমল যোগ করুন"
+          >
+            <Plus className="w-7 h-7 stroke-[2.6]" />
+          </button>
+        )}
+
+        {/* Floating Bottom Navigation Bar */}
         <MobileBottomNav
           activeTab={activeTab}
           onTabChange={handleTabChange}
           pendingLateCount={0}
+        />
+
+        {/* Profile & Activities Dashboard Modal (Firebase Integration) */}
+        <ProfileDashboardModal
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          currentUser={currentUser}
+          userProfile={userProfile}
+          onProfileUpdated={(updated) => setUserProfile(updated)}
+          currentDateStr={currentDateStr}
+          dayState={dayState}
+          allAmols={allAmols}
+          streakCount={streakCount}
+          selectedDistrict={selectedDistrict}
+          onDistrictChange={setSelectedDistrict}
+          enabledOptionalIds={enabledOptionalIds}
+          onToggleOptionalAmol={handleToggleOptionalAmol}
         />
 
         {/* Modals */}

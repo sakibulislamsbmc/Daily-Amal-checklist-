@@ -1,9 +1,12 @@
 export type AmolCategory = 
   | 'fard_salah'
+  | 'core_24'
+  | 'optional'
   | 'sunnah_nafl'
   | 'quran'
   | 'adhkar'
   | 'muhasaba_akhlaq'
+  | 'family_relationships'
   | 'custom';
 
 export type WaqtType = 
@@ -37,7 +40,11 @@ export interface AmolItem {
   descriptionEn: string;
   hadithOrVirtue?: string;
   points: number; // For Muhasaba score calculation
+  orderNumber?: number; // Sequence number (e.g. 1 to 24)
+  isOptional?: boolean; // If true, stored in optional amols pool
   timeWindow?: TimeWindowConfig;
+  pastelTheme?: 'cyan' | 'green' | 'peach' | 'pink' | 'purple' | 'yellow';
+  iconEmoji?: string;
   subTasks?: {
     id: string;
     titleBn: string;
@@ -49,6 +56,20 @@ export interface AmolItem {
     durationMinutes: number;
     colorId?: string; // Google Calendar color ID
   };
+}
+
+export interface UserProfileData {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  district?: string;
+  quranTarget?: string;
+  masjidPreference?: string;
+  spiritualBio?: string;
+  joinedAt?: string;
+  lastActiveAt?: string;
+  enabledOptionalIds?: string[];
 }
 
 export interface AmolRemark {

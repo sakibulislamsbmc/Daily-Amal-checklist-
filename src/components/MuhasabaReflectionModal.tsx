@@ -47,54 +47,54 @@ export const MuhasabaReflectionModal: React.FC<MuhasabaReflectionModalProps> = (
   ] as const;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-sm glass-panel rounded-3xl p-5 relative border border-white/10 shadow-2xl overflow-hidden bg-[#0a0a0a]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 text-slate-800">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10 relative z-10">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
               <PenTool className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">দৈনিক মুহাসাবা ডায়েরি</h3>
-              <p className="text-[10px] text-zinc-400">তারিখ: {dayState.date} • রাতের আত্মপর্যালোচনা</p>
+              <h3 className="text-sm font-extrabold text-slate-800">দৈনিক মুহাসাবা ডায়েরি</h3>
+              <p className="text-[10px] text-slate-500 font-medium">তারিখ: {dayState.date} • রাতের আত্মপর্যালোচনা</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white"
+            className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Feelings */}
-        <div className="mt-3 relative z-10">
-          <label className="block text-[11px] font-semibold text-zinc-300 mb-1.5">
-            আজকের আত্মিক অবস্থা:
+        <div className="mt-3">
+          <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+            আজকের আত্মিক অনুভূতি:
           </label>
           <div className="grid grid-cols-2 gap-1.5">
             {feelings.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFeeling(f.id)}
-                className={`p-2 rounded-xl text-left border text-xs transition-all ${
+                className={`p-2 rounded-xl text-left border text-xs font-semibold transition-all ${
                   feeling === f.id
-                    ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                    : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'
+                    ? 'bg-emerald-50 border-emerald-400 text-emerald-800 shadow-sm'
+                    : 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <div className="font-semibold text-[11px]">{f.label}</div>
+                <div className="text-[11px]">{f.label}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* Note Field */}
-        <div className="mt-3 relative z-10">
-          <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+        <div className="mt-3">
+          <label className="block text-[11px] font-bold text-slate-700 mb-1">
             দিনের আত্মপর্যালোচনা ও তাওবাহ নোট:
           </label>
           <textarea
@@ -102,22 +102,22 @@ export const MuhasabaReflectionModal: React.FC<MuhasabaReflectionModalProps> = (
             onChange={(e) => setNote(e.target.value)}
             placeholder="আজ কোথায় সময় অপচয় হলো? কোন আমলে অবহেলা হলো? আগামীকালের সংকল্প কি?..."
             rows={4}
-            className="w-full rounded-2xl bg-white/5 border border-white/10 p-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none leading-relaxed"
+            className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none leading-relaxed"
           />
         </div>
 
         {/* Footer */}
-        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-end gap-2 relative z-10">
+        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 rounded-xl text-xs text-zinc-400 hover:text-white"
+            className="px-3 py-1.5 rounded-xl text-xs text-slate-500 hover:text-slate-700"
           >
             বাতিল
           </button>
 
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-bold text-xs shadow-md transition-all cc-light-swipe flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all cc-light-swipe flex items-center gap-1.5"
           >
             {isSaved ? (
               <>

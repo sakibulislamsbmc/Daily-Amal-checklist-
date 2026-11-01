@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Calendar, Volume2, Users } from 'lucide-react';
+import { Clock, MapPin, Calendar, Volume2 } from 'lucide-react';
 import { 
   BD_DISTRICTS, 
   PrayerSchedule, 
@@ -33,23 +33,23 @@ export const PrayerTimeBanner: React.FC<PrayerTimeBannerProps> = ({
   const nextWaqt = waqts.find((w) => w.isNext) || waqts[1];
 
   return (
-    <div className="w-full glass-panel rounded-3xl p-4 relative overflow-hidden bg-[#0c0c0c]/80 border border-white/10">
+    <div className="w-full bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
       
-      {/* Top Bar: Next Prayer & District */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+      {/* Top Header: Next Prayer & District Selection */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold text-white">
-              চলমান: <strong className="text-emerald-300">{currentWaqt.nameBn}</strong>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-slate-800">
+              চলমান: <strong className="text-emerald-600">{currentWaqt.nameBn}</strong>
             </span>
-            <span className="text-[10px] text-zinc-500">•</span>
-            <span className="text-[11px] text-zinc-400">
-              পরবর্তী: <strong className="text-amber-300">{nextWaqt.nameBn} ({nextWaqt.azanTime})</strong>
+            <span className="text-slate-300">•</span>
+            <span className="text-[11px] text-slate-500">
+              পরবর্তী: <strong className="text-amber-600">{nextWaqt.nameBn} ({nextWaqt.azanTime})</strong>
             </span>
           </div>
-          <p className="text-[10px] text-zinc-400 mt-0.5">
-            বাংলাদেশ সময় (Asia/Dhaka) • <span className="text-emerald-400 font-medium">হানাফী মাযহাব অনুযায়ী আসর</span>
+          <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+            বাংলাদেশ সময় (Asia/Dhaka) • <span className="text-emerald-700 font-semibold">হানাফী আসর পদ্ধতি</span>
           </p>
         </div>
 
@@ -57,10 +57,10 @@ export const PrayerTimeBanner: React.FC<PrayerTimeBannerProps> = ({
         <select
           value={selectedDistrict}
           onChange={(e) => onDistrictChange(e.target.value)}
-          className="text-[11px] bg-white/5 border border-white/10 text-zinc-200 rounded-xl px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+          className="text-[11px] bg-slate-50 border border-slate-200 text-slate-700 font-semibold rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
         >
           {BD_DISTRICTS.map((d) => (
-            <option key={d.id} value={d.id} className="bg-black text-white">
+            <option key={d.id} value={d.id} className="bg-white text-slate-800">
               {d.nameBn}
             </option>
           ))}
@@ -75,30 +75,30 @@ export const PrayerTimeBanner: React.FC<PrayerTimeBannerProps> = ({
               key={w.nameBn}
               className={`p-2 rounded-2xl border transition-all ${
                 w.isCurrent
-                  ? 'bg-emerald-950/60 border-emerald-500/50 shadow-md shadow-emerald-950/50'
-                  : 'bg-white/5 border-white/5 hover:bg-white/10'
+                  ? 'bg-emerald-50 border-emerald-300 shadow-sm'
+                  : 'bg-slate-50 border-slate-100 hover:bg-slate-100/70'
               }`}
             >
-              <p className={`text-[11px] font-bold ${w.isCurrent ? 'text-emerald-300' : 'text-zinc-200'}`}>
+              <p className={`text-[11px] font-bold ${w.isCurrent ? 'text-emerald-800' : 'text-slate-700'}`}>
                 {w.nameBn.split(' ')[0]}
               </p>
 
               {/* Azan Time */}
-              <div className="mt-1.5">
-                <span className="text-[8px] uppercase tracking-wider text-zinc-400 flex items-center justify-center gap-0.5 leading-none">
+              <div className="mt-1">
+                <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold leading-none block">
                   আযান
                 </span>
-                <p className="text-[11px] font-extrabold text-white font-mono mt-0.5 leading-tight">
+                <p className="text-[11px] font-extrabold text-slate-800 font-mono mt-0.5 leading-tight">
                   {w.azanTime.replace(' AM', '').replace(' PM', '')}
                 </p>
               </div>
 
               {/* Jamat Time */}
-              <div className="mt-1 pt-1 border-t border-white/10">
-                <span className="text-[8px] uppercase tracking-wider text-emerald-400 flex items-center justify-center gap-0.5 leading-none">
+              <div className="mt-1 pt-1 border-t border-slate-200/60">
+                <span className="text-[8px] uppercase tracking-wider text-emerald-600 font-bold leading-none block">
                   জামাত
                 </span>
-                <p className="text-[11px] font-extrabold text-emerald-300 font-mono mt-0.5 leading-tight">
+                <p className="text-[11px] font-extrabold text-emerald-700 font-mono mt-0.5 leading-tight">
                   {w.jamatTime.replace(' AM', '').replace(' PM', '')}
                 </p>
               </div>
@@ -108,12 +108,12 @@ export const PrayerTimeBanner: React.FC<PrayerTimeBannerProps> = ({
       </div>
 
       {/* Auxiliary Timings: Tahajjud, Sehri, Ishraq */}
-      <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-400 px-1">
-        <span>🌙 তাহাজ্জুদ: <strong className="text-zinc-200">{schedule.tahajjudStart}</strong></span>
+      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 px-1 font-medium">
+        <span>🌙 তাহাজ্জুদ: <strong className="text-slate-700">{schedule.tahajjudStart}</strong></span>
         <span>•</span>
-        <span>⏳ সেহরি শেষ: <strong className="text-zinc-200">{schedule.sehriEnd}</strong></span>
+        <span>⏳ সেহরি শেষ: <strong className="text-slate-700">{schedule.sehriEnd}</strong></span>
         <span>•</span>
-        <span>☀️ ইশরাক: <strong className="text-zinc-200">{schedule.ishraq}</strong></span>
+        <span>☀️ ইশরাক: <strong className="text-slate-700">{schedule.ishraq}</strong></span>
       </div>
 
     </div>
