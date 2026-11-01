@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfileData } from '../types';
 
 const USER_PROFILE_KEY = 'daily_amol_user_profile_cache';
@@ -83,14 +83,16 @@ export async function saveUserProfile(uid: string, profile: Partial<UserProfileD
 
   saveLocalUserProfile(updated);
 
-  try {
-    const userDocRef = doc(db, 'users', uid);
-    await setDoc(userDocRef, {
-      ...updated,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
-  } catch (err) {
-    console.warn('Firestore profile save warning:', err);
+  if (uid && uid !== 'guest_user' && auth.currentUser && auth.currentUser.uid === uid) {
+    try {
+      const userDocRef = doc(db, 'users', uid);
+      await setDoc(userDocRef, {
+        ...updated,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch (err) {
+      console.warn('Firestore profile save warning:', err);
+    }
   }
 
   return updated;

@@ -6,7 +6,8 @@ import {
   Radio, 
   LogOut, 
   Flame,
-  User as UserIcon
+  User as UserIcon,
+  Smartphone
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { googleSignIn, logout } from '../firebase';
@@ -21,6 +22,7 @@ interface NavbarProps {
   onOpenCalendarSync: () => void;
   onOpenStats: () => void;
   onOpenProfile: () => void;
+  onOpenInstallModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,6 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCalendarSync,
   onOpenStats,
   onOpenProfile,
+  onOpenInstallModal,
 }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -102,6 +105,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="গুগল ক্যালেন্ডার সিঙ্ক"
           >
             <CalendarIcon className="w-4 h-4 stroke-[2.2]" />
+          </button>
+
+          {/* Install Mobile App Button */}
+          <button
+            onClick={onOpenInstallModal}
+            className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/50 transition-colors"
+            title="মোবাইল অ্যাপ ইনস্টল করুন (PWA)"
+          >
+            <Smartphone className="w-4 h-4 stroke-[2.2]" />
           </button>
 
           {/* Profile / Auth Button */}

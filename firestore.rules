@@ -15,25 +15,33 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128;
     }
 
-    // Default deny
+    function isValidDate(dateStr) {
+      return dateStr is string && dateStr.size() == 10 && dateStr.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    // Default deny all access
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // User profile document
+    // User profile document - Isolated strictly to authenticated owner
     match /users/{userId} {
-      allow get, write: if isValidId(userId) && isOwner(userId);
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow write: if isValidId(userId) && isOwner(userId)
+        && request.resource.data.size() <= 30;
       allow list: if false;
 
-      // Daily amol subcollection
+      // Daily amol tracking subcollection
       match /dailyAmols/{dateId} {
-        allow get, write, delete: if isValidId(userId) && isValidId(dateId) && isOwner(userId);
+        allow get, write, delete: if isValidId(userId) && isValidDate(dateId) && isOwner(userId)
+          && request.resource.data.size() <= 20;
         allow list: if isValidId(userId) && isOwner(userId);
       }
 
-      // Custom amol subcollection
+      // Custom amol definitions subcollection
       match /customAmols/{amolId} {
-        allow get, write, delete: if isValidId(userId) && isValidId(amolId) && isOwner(userId);
+        allow get, write, delete: if isValidId(userId) && isValidId(amolId) && isOwner(userId)
+          && request.resource.data.size() <= 15;
         allow list: if isValidId(userId) && isOwner(userId);
       }
     }
@@ -41,12 +49,15 @@ service cloud.firestore {
     // Global site traffic & unique visitor counter
     match /siteStats/{statsId} {
       allow get, list: if true;
-      allow create, update: if isValidId(statsId);
+      allow create, update: if isValidId(statsId)
+        && request.resource.data.size() <= 10;
     }
 
+    // Individual unique visitor log
     match /visitors/{visitorId} {
       allow get: if isValidId(visitorId);
-      allow create, update: if isValidId(visitorId);
+      allow create, update: if isValidId(visitorId)
+        && request.resource.data.size() <= 10;
     }
   }
 }

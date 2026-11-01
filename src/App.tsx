@@ -64,7 +64,9 @@ import { MuhasabaReflectionModal } from './components/MuhasabaReflectionModal';
 import { CustomAmolModal } from './components/CustomAmolModal';
 import { LateSubmissionModal } from './components/LateSubmissionModal';
 import { ExportModal } from './components/ExportModal';
+import { PWAInstallModal } from './components/PWAInstallModal';
 import { MobileBottomNav, MobileTab } from './components/MobileBottomNav';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 
 import { Plus } from 'lucide-react';
 
@@ -97,6 +99,9 @@ export default function App() {
   const [isReflectionOpen, setIsReflectionOpen] = useState(false);
   const [isCustomAmolOpen, setIsCustomAmolOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
+  const isOnline = useOnlineStatus();
 
   // Time-gated late submission modal
   const [lateModalItem, setLateModalItem] = useState<{ item: AmolItem; explanation: string } | null>(null);
@@ -416,7 +421,16 @@ export default function App() {
           onOpenCalendarSync={() => setIsCalendarSyncOpen(true)}
           onOpenStats={() => setActiveTab('muhasaba')}
           onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenInstallModal={() => setIsInstallModalOpen(true)}
         />
+
+        {/* Offline Banner Indicator */}
+        {!isOnline && (
+          <div className="bg-amber-600 text-white text-[11px] font-semibold px-3 py-1.5 text-center flex items-center justify-center gap-1.5 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span>অফলাইন মোড — ডেটা আপনার ডিভাইসে সংরক্ষিত থাকবে এবং অনলাইনে এলে ক্লাউডে সিঙ্ক হবে।</span>
+          </div>
+        )}
 
         {/* Main Scrollable Body */}
         <div className="flex-1 px-4 py-4 space-y-4 pb-24 overflow-y-auto no-scrollbar">
@@ -638,6 +652,7 @@ export default function App() {
           onDistrictChange={setSelectedDistrict}
           enabledOptionalIds={enabledOptionalIds}
           onToggleOptionalAmol={handleToggleOptionalAmol}
+          onOpenInstallModal={() => setIsInstallModalOpen(true)}
         />
 
         {/* Modals */}
@@ -686,6 +701,12 @@ export default function App() {
           isOpen={isExportOpen}
           onClose={() => setIsExportOpen(false)}
           currentDateStr={currentDateStr}
+        />
+
+        {/* PWA Mobile App Install Modal */}
+        <PWAInstallModal
+          isOpen={isInstallModalOpen}
+          onClose={() => setIsInstallModalOpen(false)}
         />
 
       </div>

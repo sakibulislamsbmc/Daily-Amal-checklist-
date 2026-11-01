@@ -17,10 +17,13 @@ import {
   ShieldCheck, 
   Sparkles,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Smartphone,
+  UserCheck,
+  ExternalLink
 } from 'lucide-react';
 import { User } from 'firebase/auth';
-import { googleSignIn, logout } from '../firebase';
+import { googleSignIn, signInAsGuest, logout, isInIframe, openInStandaloneTab } from '../firebase';
 import { UserProfileData, DayAmolState, AmolItem } from '../types';
 import { saveUserProfile } from '../services/userService';
 import { BD_DISTRICTS } from '../services/prayerTimes';
@@ -41,6 +44,7 @@ interface ProfileDashboardModalProps {
   onDistrictChange: (district: string) => void;
   enabledOptionalIds: string[];
   onToggleOptionalAmol: (amolId: string) => void;
+  onOpenInstallModal: () => void;
 }
 
 export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
@@ -57,6 +61,7 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
   onDistrictChange,
   enabledOptionalIds,
   onToggleOptionalAmol,
+  onOpenInstallModal,
 }) => {
   if (!isOpen) return null;
 
@@ -79,6 +84,7 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (userProfile) {
@@ -164,10 +170,29 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
 
   const handleGoogleAuth = async () => {
     setIsLoggingIn(true);
+    setAuthError(null);
     try {
-      await googleSignIn();
-    } catch (err) {
-      console.error(err);
+      const res = await googleSignIn();
+      if (!res.success) {
+        setAuthError(res.friendlyMessage || 'গুগল সাইন-ইন প্রক্রিয়া সম্পন্ন হয়নি।');
+      }
+    } catch (err: any) {
+      setAuthError('লগইন ব্যর্থ হয়েছে। বিকল্প হিসেবে অতিথি মোডে প্রবেশ করতে পারেন।');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleGuestAuth = async () => {
+    setIsLoggingIn(true);
+    setAuthError(null);
+    try {
+      const res = await signInAsGuest();
+      if (!res.success) {
+        setAuthError(res.friendlyMessage || 'অতিথি অ্যাকাউন্টে প্রবেশ ব্যর্থ হয়েছে।');
+      }
+    } catch (err: any) {
+      setAuthError('অতিথি মোডে প্রবেশ করা যায়নি।');
     } finally {
       setIsLoggingIn(false);
     }
@@ -204,6 +229,32 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 no-scrollbar">
           
+          {/* PWA Mobile App Card */}
+          <div className="p-3.5 rounded-2xl bg-slate-900 text-white flex items-center justify-between shadow-md border border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                <Smartphone className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white leading-tight">
+                  ফোনে মোবাইল অ্যাপ ইনস্টল করুন
+                </h4>
+                <p className="text-[10px] text-slate-400 font-medium">
+                  পরিচালকের ফোন বা নিজস্ব ডিভাইসে সরাসরি ইনস্টল
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                onClose();
+                onOpenInstallModal();
+              }}
+              className="py-1.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold shadow-sm transition-all shrink-0 active:scale-95"
+            >
+              ইনস্টল করুন
+            </button>
+          </div>
+
           {/* 1. Firebase Auth Account Status */}
           {currentUser ? (
             <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100/80 flex items-center justify-between">
@@ -216,7 +267,7 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-lg shadow-sm">
-                    {displayName[0]?.toUpperCase() || 'U'}
+                    {displayName[0]?.toUpperCase() || (currentUser.isAnonymous ? 'গ' : 'U')}
                   </div>
                 )}
                 <div>
@@ -226,10 +277,12 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
                     </h4>
                     <span className="px-1.5 py-0.5 rounded-full bg-emerald-600 text-[10px] text-white font-bold flex items-center gap-0.5">
                       <ShieldCheck className="w-2.5 h-2.5" />
-                      <span>ভেরিফায়েড</span>
+                      <span>{currentUser.isAnonymous ? 'অতিথি অ্যাকাউন্ট' : 'ভেরিফায়েড'}</span>
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium">{currentUser.email}</p>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {currentUser.email || (currentUser.isAnonymous ? 'অতিথি আইডি: ' + currentUser.uid.slice(0, 8) + '...' : 'অনুমোদিত ব্যবহারকারী')}
+                  </p>
                   <p className="text-[10px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>ফায়ারবেস ক্লাউড সিঙ্ক সক্রিয়</span>
@@ -246,7 +299,7 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
               </button>
             </div>
           ) : (
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md space-y-2.5">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-100 flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5" />
@@ -255,16 +308,43 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
                 <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">ফায়ারবেস ব্যাকআপ</span>
               </div>
               <p className="text-xs text-white/90 leading-relaxed font-medium">
-                গুগল দিয়ে সাইন-ইন করে আপনার আমলসমূহ সুরক্ষিত রাখুন, যেকোনো ডিভাইস থেকে রিয়েল-টাইমে ব্যবহার করুন এবং স্ট্রিক হারানো থেকে বাঁচুন।
+                গুগল অথবা অতিথি অ্যাকাউন্টে প্রবেশ করে আপনার আমলসমূহ সুরক্ষিত রাখুন, যেকোনো ডিভাইস থেকে রিয়েল-টাইমে ব্যবহার করুন।
               </p>
-              <button
-                onClick={handleGoogleAuth}
-                disabled={isLoggingIn}
-                className="w-full py-2.5 rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 active:scale-95 text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>{isLoggingIn ? 'লগইন হচ্ছে...' : 'গুগল দিয়ে সাইন-ইন করুন'}</span>
-              </button>
+
+              {authError && (
+                <div className="p-2.5 rounded-xl bg-black/25 text-[11px] text-amber-200 border border-amber-300/30">
+                  <p className="font-semibold">{authError}</p>
+                  {isInIframe() && (
+                    <button
+                      onClick={openInStandaloneTab}
+                      className="mt-1.5 flex items-center gap-1 text-[10px] underline font-bold text-white hover:text-emerald-200"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      নতুন ট্যাবে খুলুন (পপ-আপ সমস্যা ছাড়াই)
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2 pt-1">
+                <button
+                  onClick={handleGoogleAuth}
+                  disabled={isLoggingIn}
+                  className="w-full py-2.5 rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 active:scale-95 text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>{isLoggingIn ? 'লগইন হচ্ছে...' : 'গুগল দিয়ে সাইন-ইন করুন'}</span>
+                </button>
+
+                <button
+                  onClick={handleGuestAuth}
+                  disabled={isLoggingIn}
+                  className="w-full py-2 rounded-xl bg-emerald-800/60 hover:bg-emerald-800/90 text-white active:scale-95 text-xs font-semibold border border-white/20 transition-all flex items-center justify-center gap-2"
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>অতিথি (Guest) হিসেবে সরাসরি প্রবেশ</span>
+                </button>
+              </div>
             </div>
           )}
 

@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithPopup, 
+  signInAnonymously,
   GoogleAuthProvider, 
   onAuthStateChanged, 
   signOut,
@@ -18,23 +19,47 @@ import firebaseConfig from '../firebase-applet-config.json';
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with configured database ID (CRITICAL)
+// Initialize Firestore with configured database ID
 export const db: Firestore = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
 
 // Initialize Auth
 export const auth = getAuth(app);
 
-// Configure Google Auth Provider with Google Calendar scopes
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
-googleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-googleProvider.setCustomParameters({
+// 1. Standard Google Auth Provider for basic login (Profile & Email only)
+// Fast, clean, without triggering sensitive Calendar consent warnings
+export const baseGoogleProvider = new GoogleAuthProvider();
+baseGoogleProvider.setCustomParameters({
   prompt: 'select_account',
 });
+
+// 2. Google Provider with Google Calendar scopes (only requested when syncing Calendar)
+export const calendarGoogleProvider = new GoogleAuthProvider();
+calendarGoogleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+calendarGoogleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+calendarGoogleProvider.setCustomParameters({
+  prompt: 'consent',
+});
+
+// Backward compatibility alias
+export const googleProvider = baseGoogleProvider;
 
 // Access token caching in-memory
 let cachedAccessToken: string | null = null;
 let isSigningIn = false;
+
+// Helper to detect if running inside an iframe (like AI Studio preview)
+export const isInIframe = (): boolean => {
+  try {
+    return window.self !== window.top;
+  } catch (e) {
+    return true;
+  }
+};
+
+// Helper to open the app in a standalone tab
+export const openInStandaloneTab = () => {
+  window.open(window.location.href, '_blank', 'noopener,noreferrer');
+};
 
 // Standard Firestore Error Formatter per guidelines
 export enum OperationType {
@@ -95,7 +120,6 @@ export const initAuth = (
       if (cachedAccessToken) {
         if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
       } else if (!isSigningIn) {
-        // User exists in Firebase Auth session
         if (onAuthSuccess) onAuthSuccess(user, '');
       }
     } else {
@@ -105,18 +129,74 @@ export const initAuth = (
   });
 };
 
-// Sign in with Google Popup
-export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
+export interface SignInResult {
+  success: boolean;
+  user?: User;
+  accessToken?: string;
+  errorCode?: string;
+  friendlyMessage?: string;
+}
+
+// Sign in with Google Popup (optionally with Calendar scopes)
+export const googleSignIn = async (withCalendarScopes = false): Promise<SignInResult> => {
+  const provider = withCalendarScopes ? calendarGoogleProvider : baseGoogleProvider;
   try {
     isSigningIn = true;
-    const result = await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     const token = credential?.accessToken || '';
-    cachedAccessToken = token;
-    return { user: result.user, accessToken: token };
+    if (token) {
+      cachedAccessToken = token;
+    }
+    return {
+      success: true,
+      user: result.user,
+      accessToken: token,
+    };
   } catch (error: any) {
-    console.error('Sign in error:', error);
-    throw error;
+    const code = error?.code || '';
+    let friendlyMessage = 'গুগল সাইন-ইন সম্পন্ন করা যায়নি।';
+
+    if (code === 'auth/popup-blocked') {
+      friendlyMessage = 'ব্রাউজার বা আইফ্রেম কর্তৃক পপ-আপ ব্লক করা হয়েছে। অনুগ্রহ করে "নতুন ট্যাবে খুলুন" বাটনে ক্লিক করুন অথবা PWA অ্যাপ ইনস্টল করে চালান।';
+    } else if (code === 'auth/unauthorized-domain') {
+      friendlyMessage = `বর্তমান ডোমেইন (${window.location.hostname}) ফায়ারবেস অনুমোদিত তালিকায় নেই। নিচে "অতিথি মোডে প্রবেশ" করুন।`;
+    } else if (code === 'auth/popup-closed-by-user') {
+      friendlyMessage = 'লগইন উইন্ডোটি বন্ধ করা হয়েছে।';
+    } else if (code === 'auth/network-request-failed') {
+      friendlyMessage = 'ইন্টারনেট সংযোগে সমস্যা হচ্ছে। আপনার নেটওয়ার্ক চেক করুন।';
+    } else if (error?.message) {
+      friendlyMessage = `সাইন-ইন ত্রুটি: ${error.message}`;
+    }
+
+    console.warn('Google sign-in status:', code, friendlyMessage);
+    return {
+      success: false,
+      errorCode: code,
+      friendlyMessage,
+    };
+  } finally {
+    isSigningIn = false;
+  }
+};
+
+// Sign in as Guest / Anonymous user (zero popups, 100% reliable, provides cloud persistence)
+export const signInAsGuest = async (): Promise<SignInResult> => {
+  try {
+    isSigningIn = true;
+    const cred = await signInAnonymously(auth);
+    return {
+      success: true,
+      user: cred.user,
+      accessToken: '',
+    };
+  } catch (error: any) {
+    console.error('Guest sign-in error:', error);
+    return {
+      success: false,
+      errorCode: error?.code,
+      friendlyMessage: 'অতিথি অ্যাকাউন্টে প্রবেশ করা সম্ভব হয়নি। অফলাইন মোডে ডেটা সংরক্ষিত থাকবে।',
+    };
   } finally {
     isSigningIn = false;
   }

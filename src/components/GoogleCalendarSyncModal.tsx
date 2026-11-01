@@ -71,7 +71,11 @@ export const GoogleCalendarSyncModal: React.FC<GoogleCalendarSyncModalProps> = (
     setAuthError(null);
     if (!currentUser) {
       try {
-        await googleSignIn();
+        const res = await googleSignIn(true);
+        if (!res.success) {
+          setAuthError(res.friendlyMessage || 'গুগল সাইন ইন সম্পন্ন হয়নি।');
+          return;
+        }
       } catch (err: any) {
         setAuthError('গুগল সাইন ইন সম্পন্ন হয়নি।');
         return;
@@ -81,7 +85,11 @@ export const GoogleCalendarSyncModal: React.FC<GoogleCalendarSyncModalProps> = (
     const token = await getAccessToken();
     if (!token) {
       try {
-        await googleSignIn();
+        const res = await googleSignIn(true);
+        if (!res.success) {
+          setAuthError(res.friendlyMessage || 'গুগল ক্যালেন্ডারের অনুমতি পাওয়া যায়নি।');
+          return;
+        }
       } catch {
         setAuthError('গুগল ক্যালেন্ডারের অনুমতি পাওয়া যায়নি।');
         return;
