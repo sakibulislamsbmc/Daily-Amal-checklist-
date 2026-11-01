@@ -38,7 +38,9 @@ import {
   syncDayState, 
   subscribeToUserDayAmol, 
   loadCustomAmols, 
-  saveCustomAmol 
+  saveCustomAmol,
+  subscribeToUserCustomAmols,
+  fetchUserAmolHistory
 } from './services/amolStorage';
 import { 
   getLocalUserProfile, 
@@ -153,9 +155,11 @@ export default function App() {
     };
   }, []);
 
-  // Listen to User Profile when logged in
+  // Listen to User Profile, Custom Amols & History from Cloud Firestore when logged in
   useEffect(() => {
     if (currentUser) {
+      fetchUserAmolHistory(currentUser.uid);
+
       const unsubProfile = subscribeToUserProfile(currentUser.uid, (profile) => {
         setUserProfile(profile);
         if (profile.district) {
@@ -165,7 +169,15 @@ export default function App() {
           setEnabledOptionalIds(profile.enabledOptionalIds);
         }
       });
-      return () => unsubProfile();
+
+      const unsubCustom = subscribeToUserCustomAmols(currentUser.uid, (remoteCustomAmols) => {
+        setCustomAmols(remoteCustomAmols);
+      });
+
+      return () => {
+        unsubProfile();
+        unsubCustom();
+      };
     }
   }, [currentUser]);
 
@@ -338,7 +350,7 @@ export default function App() {
   };
 
   const handleAddCustomAmol = (newAmol: AmolItem) => {
-    const updated = saveCustomAmol(newAmol);
+    const updated = saveCustomAmol(newAmol, currentUser?.uid);
     setCustomAmols(updated);
   };
 

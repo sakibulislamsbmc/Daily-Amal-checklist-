@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getAnalytics, isSupported, logEvent, type Analytics } from 'firebase/analytics';
 import { 
   getAuth, 
   signInWithPopup, 
@@ -10,17 +11,69 @@ import {
 } from 'firebase/auth';
 import { 
   getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc, 
   getDocFromServer,
   type Firestore
 } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
 
-// Initialize Firebase App
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+export const firebaseConfig = {
+  apiKey: "AIzaSyBJZSTki0ttYMLP33jbKCB2MPDHVHdx0lE",
+  authDomain: "daily-amol-checklist.firebaseapp.com",
+  projectId: "daily-amol-checklist",
+  storageBucket: "daily-amol-checklist.firebasestorage.app",
+  messagingSenderId: "544670284879",
+  appId: "1:544670284879:web:bea9738850bd5458d97e3a",
+  measurementId: "G-J3QQHQJD1L"
+};
+
+// Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with configured database ID
-export const db: Firestore = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+// Initialize Firebase Analytics
+export let analytics: Analytics | null = null;
+if (typeof window !== 'undefined') {
+  try {
+    analytics = getAnalytics(app);
+  } catch {
+    isSupported()
+      .then((supported) => {
+        if (supported) {
+          analytics = getAnalytics(app);
+        }
+      })
+      .catch(() => {});
+  }
+}
+
+export const trackAnalyticsEvent = (eventName: string, eventParams?: Record<string, any>) => {
+  try {
+    if (analytics) {
+      logEvent(analytics, eventName, eventParams);
+    }
+  } catch {
+    // Ignore analytics errors in restricted browser environments
+  }
+};
+
+// Initialize Cloud Firestore with offline persistence & multi-tab synchronization
+function createFirestoreInstance(): Firestore {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
+export const db: Firestore = createFirestoreInstance();
 
 // Initialize Auth
 export const auth = getAuth(app);

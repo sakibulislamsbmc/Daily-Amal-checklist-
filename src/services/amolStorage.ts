@@ -1,7 +1,15 @@
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import {
+  doc,
+  setDoc,
+  onSnapshot,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+} from 'firebase/firestore';
+import { db, trackAnalyticsEvent } from '../firebase';
 import { DayAmolState, AmolItem, AmolRemark } from '../types';
-import { DEFAULT_AMOLS } from '../data/defaultAmols';
 
 const LOCAL_STORAGE_PREFIX = 'daily_amol_';
 const CUSTOM_AMOLS_KEY = 'daily_amol_custom_items';
@@ -61,38 +69,106 @@ export function saveDayStateLocal(state: DayAmolState): void {
 }
 
 /**
- * Save day state to Firestore if user logged in, plus local storage
+ * Parse Firestore document data into DayAmolState
  */
-export async function syncDayState(userId: string | null, state: DayAmolState, allAmols: AmolItem[]): Promise<void> {
-  saveDayStateLocal(state);
+function parseFirestoreDayDoc(dateStr: string, data: Record<string, any>): DayAmolState {
+  let completed: {
+    completedAmolIds: string[];
+    subTaskCompletedIds: string[];
+    amolRemarks?: Record<string, AmolRemark>;
+  } = {
+    completedAmolIds: Array.isArray(data.completedAmolIds) ? data.completedAmolIds : [],
+    subTaskCompletedIds: Array.isArray(data.subTaskCompletedIds) ? data.subTaskCompletedIds : [],
+    amolRemarks: data.amolRemarks || {},
+  };
 
-  if (!userId) return;
+  try {
+    if (typeof data.completedAmols === 'string') {
+      const parsed = JSON.parse(data.completedAmols);
+      completed = {
+        completedAmolIds: parsed.completedAmolIds || completed.completedAmolIds,
+        subTaskCompletedIds: parsed.subTaskCompletedIds || completed.subTaskCompletedIds,
+        amolRemarks: parsed.amolRemarks || completed.amolRemarks,
+      };
+    }
+  } catch {}
+
+  let tasbeeh: Record<string, number> =
+    data.tasbeehCounts && typeof data.tasbeehCounts === 'object' ? data.tasbeehCounts : {};
+  try {
+    if (typeof data.tasbeehSummary === 'string') {
+      tasbeeh = { ...tasbeeh, ...JSON.parse(data.tasbeehSummary) };
+    }
+  } catch {}
+
+  return {
+    date: dateStr,
+    completedAmolIds: completed.completedAmolIds || [],
+    subTaskCompletedIds: completed.subTaskCompletedIds || [],
+    tasbeehCounts: {
+      ...getInitialDayState(dateStr).tasbeehCounts,
+      ...tasbeeh,
+    },
+    reflectionNote: data.reflection ?? data.reflectionNote ?? '',
+    spiritualFeeling: data.spiritualFeeling || 'peaceful',
+    amolRemarks: completed.amolRemarks || {},
+    updatedAt: data.updatedAt || new Date().toISOString(),
+  };
+}
+
+/**
+ * Save day state to Cloud Firestore (`users/{userId}/dailyAmols/{date}`) + LocalStorage
+ */
+export async function syncDayState(
+  userId: string | null,
+  state: DayAmolState,
+  allAmols: AmolItem[]
+): Promise<void> {
+  saveDayStateLocal(state);
 
   const scoreData = calculateMuhasabaScore(state, allAmols);
 
+  trackAnalyticsEvent('amol_checklist_sync', {
+    date: state.date,
+    score: scoreData.percentage,
+    completed_count: state.completedAmolIds.length,
+  });
+
+  if (!userId) return;
+
   try {
-    await setDoc(doc(db, 'users', userId, 'dailyAmols', state.date), {
-      userId,
-      date: state.date,
-      completedAmols: JSON.stringify({
+    const docRef = doc(db, 'users', userId, 'dailyAmols', state.date);
+    await setDoc(
+      docRef,
+      {
+        userId,
+        date: state.date,
         completedAmolIds: state.completedAmolIds,
         subTaskCompletedIds: state.subTaskCompletedIds,
-        amolRemarks: state.amolRemarks || {},
-      }),
-      score: scoreData.percentage,
-      totalCompleted: state.completedAmolIds.length,
-      reflection: state.reflectionNote || '',
-      tasbeehSummary: JSON.stringify(state.tasbeehCounts),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+        completedAmols: JSON.stringify({
+          completedAmolIds: state.completedAmolIds,
+          subTaskCompletedIds: state.subTaskCompletedIds,
+          amolRemarks: state.amolRemarks || {},
+        }),
+        score: scoreData.percentage,
+        earnedPoints: scoreData.earnedPoints,
+        totalPossiblePoints: scoreData.totalPossiblePoints,
+        totalCompleted: state.completedAmolIds.length,
+        reflection: state.reflectionNote || '',
+        spiritualFeeling: state.spiritualFeeling || 'peaceful',
+        tasbeehCounts: state.tasbeehCounts,
+        tasbeehSummary: JSON.stringify(state.tasbeehCounts),
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
   } catch (err) {
-    console.warn('Sync to Firestore skipped or failed:', err);
+    console.warn('Sync to Cloud Firestore skipped or failed:', err);
   }
 }
 
 /**
- * Listen to Firestore daily amol for logged in user
+ * Real-time listener to Cloud Firestore daily amol document (`users/{userId}/dailyAmols/{dateStr}`)
  */
 export function subscribeToUserDayAmol(
   userId: string,
@@ -105,51 +181,37 @@ export function subscribeToUserDayAmol(
     docRef,
     (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data();
-        let completed: { 
-          completedAmolIds: string[]; 
-          subTaskCompletedIds: string[];
-          amolRemarks?: Record<string, AmolRemark>;
-        } = {
-          completedAmolIds: [],
-          subTaskCompletedIds: [],
-          amolRemarks: {},
-        };
-        try {
-          if (data.completedAmols) {
-            completed = JSON.parse(data.completedAmols);
-          }
-        } catch {}
-
-        let tasbeeh: Record<string, number> = {};
-        try {
-          if (data.tasbeehSummary) {
-            tasbeeh = JSON.parse(data.tasbeehSummary);
-          }
-        } catch {}
-
-        const syncedState: DayAmolState = {
-          date: dateStr,
-          completedAmolIds: completed.completedAmolIds || [],
-          subTaskCompletedIds: completed.subTaskCompletedIds || [],
-          tasbeehCounts: {
-            ...getInitialDayState(dateStr).tasbeehCounts,
-            ...tasbeeh,
-          },
-          reflectionNote: data.reflection || '',
-          spiritualFeeling: 'peaceful',
-          amolRemarks: completed.amolRemarks || {},
-          updatedAt: data.updatedAt || new Date().toISOString(),
-        };
-
+        const syncedState = parseFirestoreDayDoc(dateStr, snapshot.data());
         saveDayStateLocal(syncedState);
         onData(syncedState);
       }
     },
     (err) => {
-      console.warn('Daily amol subscription note:', err.message);
+      console.warn('Daily amol Firestore subscription note:', err.message);
     }
   );
+}
+
+/**
+ * Fetch recent 30 days of user's Amol history from Cloud Firestore into local cache (for streaks & weekly charts)
+ */
+export async function fetchUserAmolHistory(userId: string): Promise<void> {
+  if (!userId) return;
+  try {
+    const colRef = collection(db, 'users', userId, 'dailyAmols');
+    const q = query(colRef, orderBy('date', 'desc'), limit(30));
+    const snap = await getDocs(q);
+    snap.forEach((docSnap) => {
+      const data = docSnap.data();
+      const dateStr = data.date || docSnap.id;
+      if (dateStr) {
+        const parsedState = parseFirestoreDayDoc(dateStr, data);
+        saveDayStateLocal(parsedState);
+      }
+    });
+  } catch (err) {
+    console.warn('History sync from Cloud Firestore note:', err);
+  }
 }
 
 /**
@@ -240,13 +302,72 @@ export function loadCustomAmols(): AmolItem[] {
 }
 
 /**
- * Save Custom Amols to localStorage
+ * Save Custom Amol to localStorage and Cloud Firestore (`users/{userId}/customAmols/{amolId}`)
  */
-export function saveCustomAmol(amol: AmolItem): AmolItem[] {
+export function saveCustomAmol(amol: AmolItem, userId?: string | null): AmolItem[] {
   const current = loadCustomAmols();
   const updated = [amol, ...current.filter((x) => x.id !== amol.id)];
   try {
     localStorage.setItem(CUSTOM_AMOLS_KEY, JSON.stringify(updated));
   } catch {}
+
+  if (userId) {
+    const docRef = doc(db, 'users', userId, 'customAmols', amol.id);
+    setDoc(
+      docRef,
+      {
+        id: amol.id,
+        titleBn: amol.titleBn,
+        titleEn: amol.titleEn || amol.titleBn,
+        descriptionBn: amol.descriptionBn || '',
+        descriptionEn: amol.descriptionEn || amol.descriptionBn || '',
+        category: amol.category || 'custom',
+        points: amol.points || 10,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    ).catch((err) => {
+      console.warn('Custom Amol Cloud Firestore save warning:', err);
+    });
+  }
+
   return updated;
+}
+
+/**
+ * Real-time listener to user's Custom Amols in Cloud Firestore (`users/{userId}/customAmols`)
+ */
+export function subscribeToUserCustomAmols(
+  userId: string,
+  onData: (customAmols: AmolItem[]) => void
+): () => void {
+  const colRef = collection(db, 'users', userId, 'customAmols');
+
+  return onSnapshot(
+    colRef,
+    (snapshot) => {
+      if (!snapshot.empty) {
+        const remoteItems: AmolItem[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          remoteItems.push({
+            id: data.id || docSnap.id,
+            titleBn: data.titleBn || '',
+            titleEn: data.titleEn || data.titleBn || '',
+            descriptionBn: data.descriptionBn || '',
+            descriptionEn: data.descriptionEn || data.descriptionBn || '',
+            category: 'custom',
+            points: typeof data.points === 'number' ? data.points : 10,
+          });
+        });
+        try {
+          localStorage.setItem(CUSTOM_AMOLS_KEY, JSON.stringify(remoteItems));
+        } catch {}
+        onData(remoteItems);
+      }
+    },
+    (err) => {
+      console.warn('Custom amols Firestore subscription note:', err.message);
+    }
+  );
 }
