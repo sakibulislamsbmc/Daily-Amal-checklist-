@@ -23,6 +23,7 @@ interface NavbarProps {
   onOpenStats: () => void;
   onOpenProfile: () => void;
   onOpenInstallModal: () => void;
+  onOpenDeveloper: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenStats,
   onOpenProfile,
   onOpenInstallModal,
+  onOpenDeveloper,
 }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -114,6 +116,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="মোবাইল অ্যাপ ইনস্টল করুন (PWA)"
           >
             <Smartphone className="w-4 h-4 stroke-[2.2]" />
+          </button>
+
+          {/* App Developer Information Button */}
+          <button
+            onClick={onOpenDeveloper}
+            className="p-1 rounded-xl bg-emerald-950/10 hover:bg-emerald-100 border border-emerald-500/30 hover:border-emerald-500 transition-all flex items-center justify-center shadow-xs"
+            title="App Developer Information • অ্যাপ ডেভেলপার তথ্য"
+          >
+            <img
+              src="/favicon.png"
+              alt="App Developer"
+              className="w-5 h-5 rounded-lg object-contain shadow-xs"
+            />
           </button>
 
           {/* Profile / Auth Button */}

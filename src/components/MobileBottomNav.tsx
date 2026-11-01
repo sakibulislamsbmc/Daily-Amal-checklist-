@@ -7,7 +7,7 @@ import {
   Download
 } from 'lucide-react';
 
-export type MobileTab = 'checklist' | 'prayers' | 'muhasaba' | 'tasbeeh' | 'export';
+export type MobileTab = 'checklist' | 'prayers' | 'muhasaba' | 'tasbeeh' | 'export' | 'developer';
 
 interface MobileBottomNavProps {
   activeTab: MobileTab;
@@ -21,11 +21,17 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   pendingLateCount = 0,
 }) => {
   const tabs = [
-    { id: 'checklist' as MobileTab, labelBn: 'আমল তালিকা', icon: CheckSquare },
-    { id: 'prayers' as MobileTab, labelBn: 'ওয়াক্ত ও জামাত', icon: Clock },
+    { id: 'checklist' as MobileTab, labelBn: 'আমল', icon: CheckSquare },
+    { id: 'prayers' as MobileTab, labelBn: 'ওয়াক্ত', icon: Clock },
     { id: 'muhasaba' as MobileTab, labelBn: 'মুহাসাবা', icon: Award },
     { id: 'tasbeeh' as MobileTab, labelBn: 'তাসবীহ', icon: Repeat },
     { id: 'export' as MobileTab, labelBn: 'এক্সপোর্ট', icon: Download },
+    { 
+      id: 'developer' as MobileTab, 
+      labelBn: 'ডেভেলপার', 
+      imageIcon: '/favicon.png',
+      title: 'App Developer Information'
+    },
   ];
 
   const handleTabClick = (tabId: MobileTab) => {
@@ -36,8 +42,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   return (
-    <div className="sticky bottom-3 z-40 px-3 w-full max-w-[430px] mx-auto pointer-events-auto">
-      <nav className="rounded-full p-1.5 flex items-center justify-around border border-slate-200/80 shadow-xl bg-white/95 backdrop-blur-xl">
+    <div className="sticky bottom-3 z-40 px-2 w-full max-w-[430px] mx-auto pointer-events-auto">
+      <nav className="rounded-full p-1.5 flex items-center justify-between border border-slate-200/80 shadow-xl bg-white/95 backdrop-blur-xl">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -46,14 +52,26 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab.id)}
-              className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-full transition-all duration-200 ${
+              className={`relative flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-full transition-all duration-200 ${
                 isActive
                   ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 scale-105'
                   : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
               }`}
+              title={tab.title || tab.labelBn}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-              <span className={`text-[10px] mt-0.5 leading-none whitespace-nowrap ${isActive ? 'font-bold' : 'font-medium'}`}>
+              {tab.imageIcon ? (
+                <img
+                  src={tab.imageIcon}
+                  alt={tab.labelBn}
+                  className={`w-4 h-4 rounded-md object-contain transition-all ${
+                    isActive ? 'ring-1 ring-white' : 'opacity-80'
+                  }`}
+                />
+              ) : (
+                Icon && <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+              )}
+              
+              <span className={`text-[9px] mt-0.5 leading-none whitespace-nowrap ${isActive ? 'font-bold' : 'font-medium'}`}>
                 {tab.labelBn}
               </span>
 

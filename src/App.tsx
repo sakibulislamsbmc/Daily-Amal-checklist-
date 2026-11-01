@@ -67,8 +67,11 @@ import { ExportModal } from './components/ExportModal';
 import { PWAInstallModal } from './components/PWAInstallModal';
 import { MobileBottomNav, MobileTab } from './components/MobileBottomNav';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { ScrollingNotificationBar } from './components/ScrollingNotificationBar';
+import { BannerAdsCarousel } from './components/BannerAdsCarousel';
+import { DeveloperInfoModal } from './components/DeveloperInfoModal';
 
-import { Plus } from 'lucide-react';
+import { Plus, UserCheck, ShieldCheck, Mail, Phone, ExternalLink, Code2 } from 'lucide-react';
 
 export default function App() {
   const [currentDateStr, setCurrentDateStr] = useState<string>(() => getTodayDateInBD());
@@ -100,6 +103,7 @@ export default function App() {
   const [isCustomAmolOpen, setIsCustomAmolOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isDeveloperOpen, setIsDeveloperOpen] = useState(false);
 
   const isOnline = useOnlineStatus();
 
@@ -394,6 +398,10 @@ export default function App() {
       setIsExportOpen(true);
       return;
     }
+    if (tab === 'developer') {
+      setIsDeveloperOpen(true);
+      return;
+    }
     setActiveTab(tab);
   };
 
@@ -411,7 +419,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Top Header Navbar with Profile Dashboard Trigger */}
+        {/* Top Header Navbar with Profile Dashboard Trigger & Developer Info */}
         <Navbar
           currentDateStr={currentDateStr}
           onDateChange={setCurrentDateStr}
@@ -422,6 +430,14 @@ export default function App() {
           onOpenStats={() => setActiveTab('muhasaba')}
           onOpenProfile={() => setIsProfileOpen(true)}
           onOpenInstallModal={() => setIsInstallModalOpen(true)}
+          onOpenDeveloper={() => setIsDeveloperOpen(true)}
+        />
+
+        {/* Top Scrolling Notification Bar (Right-to-Left Marquee with pause-on-hover) */}
+        <ScrollingNotificationBar
+          onOpenDeveloper={() => setIsDeveloperOpen(true)}
+          onOpenInstall={() => setIsInstallModalOpen(true)}
+          onOpenCalendarSync={() => setIsCalendarSyncOpen(true)}
         />
 
         {/* Offline Banner Indicator */}
@@ -483,7 +499,10 @@ export default function App() {
               {/* 3. Daily Notification Toggle Bar */}
               <NotificationToggleBar />
 
-              {/* 4. Categorized Amol Sections with Pastel Cards */}
+              {/* 4. Banner Ad Placement Carousel (Announcements & Events) */}
+              <BannerAdsCarousel />
+
+              {/* 5. Categorized Amol Sections with Pastel Cards */}
               <div className="space-y-5 pt-1">
                 
                 {/* Five Obligatory Prayers */}
@@ -617,6 +636,110 @@ export default function App() {
             </div>
           )}
 
+          {/* TAB 4: DEVELOPER INFORMATION SECTION */}
+          {activeTab === 'developer' && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="text-center pt-1 pb-1">
+                <h2 className="text-base font-extrabold text-slate-800">অ্যাপ ডেভেলপার তথ্য</h2>
+                <p className="text-xs text-slate-500 font-medium">Developer Profile & Contact Details</p>
+              </div>
+
+              {/* In-page Developer Profile Card */}
+              <div className="p-5 rounded-3xl bg-slate-900 text-white border border-emerald-500/30 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="flex flex-col items-center text-center">
+                  <div className="relative mb-3">
+                    <div className="w-24 h-24 rounded-full ring-4 ring-emerald-500/60 p-1 bg-gradient-to-tr from-emerald-500 to-teal-400 shadow-xl overflow-hidden">
+                      <img
+                        src="https://kommodo.ai/i/ejBnkf03L6j67RNAGz9e"
+                        alt="Sakibul Islam Sabbir"
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    </div>
+                    <div className="absolute bottom-1 right-1 p-1 rounded-full bg-emerald-500 text-white shadow-md border-2 border-slate-900">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-extrabold text-white tracking-tight">Sakibul Islam Sabbir</h3>
+                  <p className="text-xs text-slate-300 font-medium">সাকিবুল ইসলাম সাব্বির</p>
+
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
+                    <Code2 className="w-3 h-3" />
+                    Full-Stack Developer & UI/UX Designer
+                  </div>
+
+                  <p className="text-xs font-semibold text-slate-300 mt-2">
+                    Founder & CEO, Bismahsoft
+                  </p>
+                </div>
+
+                <div className="mt-4 p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-xs text-slate-200 leading-relaxed font-normal">
+                  <p>
+                    Full-Stack Web Developer and UI/UX Designer focused on crafting clean, high-performance web applications with modern tech stacks.
+                  </p>
+                  <p className="pt-2 border-t border-white/10 text-slate-300">
+                    Student at As-Sunnah Skill Development Institute (Small Business Management Course, Batch 29, Department of Creative).
+                  </p>
+                </div>
+
+                {/* Social Buttons */}
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                  <a
+                    href="https://www.facebook.com/share/18jJa1Fom2/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-200 font-bold transition-all"
+                  >
+                    <span>Facebook</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
+                  <a
+                    href="https://linkedin.com/in/sakibulislamsabbir"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/30 text-sky-200 font-bold transition-all"
+                  >
+                    <span>LinkedIn</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
+                  <a
+                    href="https://wa.me/8801410957506"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-200 font-bold transition-all"
+                  >
+                    <span>WhatsApp</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
+                  <a
+                    href="mailto:sakibulislamsbmc@gmail.com"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-200 font-bold transition-all"
+                  >
+                    <span>Email Me</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                <div className="mt-4">
+                  <button
+                    onClick={() => setIsDeveloperOpen(true)}
+                    className="w-full py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all cc-light-swipe"
+                  >
+                    বিস্তারিত প্রোফাইল মোডাল খুলুন
+                  </button>
+                </div>
+              </div>
+
+              {/* Also show Announcements Carousel in Developer section */}
+              <BannerAdsCarousel />
+            </div>
+          )}
+
         </div>
 
         {/* Floating Action Button (Green + Circle as in Reference Image) */}
@@ -707,6 +830,12 @@ export default function App() {
         <PWAInstallModal
           isOpen={isInstallModalOpen}
           onClose={() => setIsInstallModalOpen(false)}
+        />
+
+        {/* App Developer Profile Information Modal */}
+        <DeveloperInfoModal
+          isOpen={isDeveloperOpen}
+          onClose={() => setIsDeveloperOpen(false)}
         />
 
       </div>
