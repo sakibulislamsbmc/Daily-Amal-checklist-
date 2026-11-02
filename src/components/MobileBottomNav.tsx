@@ -3,12 +3,12 @@ import {
   CheckSquare, 
   Clock, 
   Award, 
-  Download,
+  Tv,
   User as UserIcon
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 
-export type MobileTab = 'checklist' | 'prayers' | 'muhasaba' | 'export' | 'developer' | 'profile';
+export type MobileTab = 'checklist' | 'prayers' | 'muhasaba' | 'media' | 'developer' | 'profile';
 
 interface MobileBottomNavProps {
   activeTab: MobileTab;
@@ -53,10 +53,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       gradientClass: 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 text-white',
     },
     {
-      id: 'export',
-      labelBn: 'এক্সপোর্ট',
-      title: 'রিপোর্ট ডাউনলোড ও এক্সপোর্ট',
-      icon: Download,
+      id: 'media',
+      labelBn: 'মিডিয়া',
+      title: 'মিডিয়া, ভিডিও আপডেট ও ফেসবুক পেজ ফিড',
+      icon: Tv,
       gradientClass: 'bg-gradient-to-br from-teal-400 via-cyan-500 to-blue-700 text-white',
     },
     {
@@ -69,7 +69,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     {
       id: 'profile',
       labelBn: 'প্রোফাইল',
-      title: 'প্রোফাইল ও ড্যাশবোর্ড',
+      title: 'প্রোফাইল, রিপোর্ট এক্সপোর্ট ও ড্যাশবোর্ড',
       icon: UserIcon,
       imageIcon: currentUser?.photoURL || undefined,
       gradientClass: 'bg-gradient-to-br from-rose-400 via-pink-500 to-purple-700 text-white',

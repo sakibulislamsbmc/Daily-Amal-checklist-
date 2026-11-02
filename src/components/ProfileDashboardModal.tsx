@@ -20,7 +20,11 @@ import {
   ToggleRight,
   Smartphone,
   UserCheck,
-  ExternalLink
+  ExternalLink,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  Image as ImageIcon
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { googleSignIn, signInAsGuest, logout, isInIframe, openInStandaloneTab } from '../firebase';
@@ -45,6 +49,7 @@ interface ProfileDashboardModalProps {
   enabledOptionalIds: string[];
   onToggleOptionalAmol: (amolId: string) => void;
   onOpenInstallModal: () => void;
+  onOpenExportModal: () => void;
 }
 
 export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
@@ -62,6 +67,7 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
   enabledOptionalIds,
   onToggleOptionalAmol,
   onOpenInstallModal,
+  onOpenExportModal,
 }) => {
   if (!isOpen) return null;
 
@@ -253,6 +259,94 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
             >
               ইনস্টল করুন
             </button>
+          </div>
+
+          {/* Moved Export Section with 3D Glossy Icon & Neatly Aligned Format Triggers */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-50/90 via-sky-50/80 to-blue-50/90 border border-cyan-200/80 shadow-sm space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-400 via-cyan-500 to-blue-700 text-white flex items-center justify-center icon-3d-badge cc-light-swipe cc-light-swipe-continuous shrink-0">
+                  <Download className="w-5 h-5 stroke-[2.6] drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] relative z-[3]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="text-sm font-extrabold text-slate-800 leading-tight">
+                      এক্সপোর্ট ও রিপোর্ট সেন্টার
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full bg-cyan-600 text-white text-[9px] font-extrabold">
+                      3D Export
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 font-medium truncate">
+                    দৈনিক, সাপ্তাহিক ও মাসিক মুহাসাবা রিপোর্ট ডাউনলোড
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenExportModal();
+                }}
+                className="py-2 px-3.5 rounded-xl bg-gradient-to-r from-teal-500 via-cyan-600 to-blue-700 hover:from-teal-600 hover:to-blue-800 text-white text-xs font-extrabold shadow-md transition-all shrink-0 active:scale-95 cc-light-swipe"
+              >
+                এক্সপোর্ট খুলুন
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenExportModal();
+                }}
+                className="p-2 rounded-xl bg-white/90 hover:bg-white border border-blue-200/80 flex items-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-700 text-white flex items-center justify-center icon-3d-badge shrink-0">
+                  <FileText className="w-3.5 h-3.5 relative z-[3]" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-[10px] font-black text-slate-800 leading-none truncate">Word</p>
+                  <p className="text-[9px] text-blue-700 font-bold leading-none mt-0.5">.docx</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenExportModal();
+                }}
+                className="p-2 rounded-xl bg-white/90 hover:bg-white border border-emerald-200/80 flex items-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-700 text-white flex items-center justify-center icon-3d-badge shrink-0">
+                  <FileSpreadsheet className="w-3.5 h-3.5 relative z-[3]" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-[10px] font-black text-slate-800 leading-none truncate">Excel</p>
+                  <p className="text-[9px] text-emerald-700 font-bold leading-none mt-0.5">.xlsx</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenExportModal();
+                }}
+                className="p-2 rounded-xl bg-white/90 hover:bg-white border border-rose-200/80 flex items-center gap-2 transition-all active:scale-95 shadow-2xs"
+              >
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-purple-800 text-white flex items-center justify-center icon-3d-badge shrink-0">
+                  <ImageIcon className="w-3.5 h-3.5 relative z-[3]" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-[10px] font-black text-slate-800 leading-none truncate">Image</p>
+                  <p className="text-[9px] text-rose-700 font-bold leading-none mt-0.5">.jpg কার্ড</p>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* 1. Firebase Auth Account Status */}

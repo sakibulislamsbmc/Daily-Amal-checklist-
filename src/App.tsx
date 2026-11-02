@@ -73,6 +73,7 @@ import { ScrollingNotificationBar } from './components/ScrollingNotificationBar'
 import { BannerAdsCarousel } from './components/BannerAdsCarousel';
 import { DeveloperInfoModal } from './components/DeveloperInfoModal';
 import { RuqyahAudioSection } from './components/RuqyahAudioSection';
+import { MediaSection } from './components/MediaSection';
 
 import { Plus, UserCheck, ShieldCheck, Mail, Phone, ExternalLink, Code2 } from 'lucide-react';
 
@@ -403,16 +404,8 @@ export default function App() {
   ];
 
   const handleTabChange = (tab: MobileTab) => {
-    if (tab === 'export') {
-      setIsExportOpen(true);
-      return;
-    }
     if (tab === 'profile') {
       setIsProfileOpen(true);
-      return;
-    }
-    if (tab === 'developer') {
-      setActiveTab('developer');
       return;
     }
     setActiveTab(tab);
@@ -709,7 +702,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* TAB 4: DEVELOPER INFORMATION SECTION */}
+          {/* TAB 4: MEDIA SECTION (VIDEO UPDATES & FACEBOOK LIVE PAGE FEED) */}
+          {activeTab === 'media' && <MediaSection />}
+
+          {/* TAB 5: DEVELOPER INFORMATION SECTION */}
           {activeTab === 'developer' && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="text-center pt-1 pb-1">
@@ -850,6 +846,7 @@ export default function App() {
           enabledOptionalIds={enabledOptionalIds}
           onToggleOptionalAmol={handleToggleOptionalAmol}
           onOpenInstallModal={() => setIsInstallModalOpen(true)}
+          onOpenExportModal={() => setIsExportOpen(true)}
         />
 
         {/* Modals */}
