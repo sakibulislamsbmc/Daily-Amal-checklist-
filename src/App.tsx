@@ -74,6 +74,8 @@ import { BannerAdsCarousel } from './components/BannerAdsCarousel';
 import { DeveloperInfoModal } from './components/DeveloperInfoModal';
 import { RuqyahAudioSection } from './components/RuqyahAudioSection';
 import { MediaSection } from './components/MediaSection';
+import { OnboardingFlowModal } from './components/OnboardingFlowModal';
+import { AlHadithSection } from './components/AlHadithSection';
 
 import { Plus, UserCheck, ShieldCheck, Mail, Phone, ExternalLink, Code2 } from 'lucide-react';
 
@@ -88,6 +90,7 @@ export default function App() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<MobileTab>('checklist');
+  const [muhasabaSubTab, setMuhasabaSubTab] = useState<'muhasaba' | 'wakt'>('muhasaba');
 
   // Traffic & Visitor counter
   const [trafficStats, setTrafficStats] = useState<TrafficStats>({
@@ -100,6 +103,9 @@ export default function App() {
   const [dayState, setDayState] = useState<DayAmolState>(() => loadDayStateLocal(currentDateStr));
 
   // Modals
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(() => {
+    return localStorage.getItem('daily_amol_onboarding_completed') !== 'true';
+  });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isTasbeehOpen, setIsTasbeehOpen] = useState(false);
   const [isCalendarSyncOpen, setIsCalendarSyncOpen] = useState(false);
@@ -437,6 +443,7 @@ export default function App() {
           onOpenProfile={() => setIsProfileOpen(true)}
           onOpenInstallModal={() => setIsInstallModalOpen(true)}
           onOpenDeveloper={() => setIsDeveloperOpen(true)}
+          onOpenOnboarding={() => setIsOnboardingOpen(true)}
         />
 
         {/* Top Scrolling Notification Bar (Right-to-Left Marquee with pause-on-hover) */}
@@ -570,57 +577,89 @@ export default function App() {
             </>
           )}
 
-          {/* TAB 2: PRAYERS & SPLIT JAMAT VIEW */}
-          {activeTab === 'prayers' && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-center pt-1 pb-1">
-                <h2 className="text-base font-extrabold text-slate-800">ওয়াক্ত ও জামাত সময়সূচী</h2>
-                <p className="text-xs text-slate-500 font-medium">বাংলাদেশ সময় (Asia/Dhaka) • হানাফী আসর পদ্ধতি</p>
-              </div>
-
-              <PrayerTimeBanner
-                schedule={prayerSchedule}
-                selectedDistrict={selectedDistrict}
-                onDistrictChange={(dist) => {
-                  setSelectedDistrict(dist);
-                  if (currentUser) {
-                    saveUserProfile(currentUser.uid, { district: dist });
-                  }
-                }}
-                onOpenCalendarSync={() => setIsCalendarSyncOpen(true)}
-              />
-
-              <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
-                <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                  হানাফী আসর ও জামাত বিধান
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                  ইমামে আযম আবু হানিফা (রহ.) এর সিদ্ধান্ত অনুযায়ী বস্তুর ছায়া দ্বিগুণ (২ গুণ) হলে আসরের ওয়াক্ত শুরু হয়। বাংলাদেশে প্রচলিত সকল মসজিদে এই ওয়াক্ত ও জামাত কঠোরভাবে অনুসরণ করা হয়।
-                </p>
-                <button
-                  onClick={() => setIsCalendarSyncOpen(true)}
-                  className="w-full py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all cc-light-swipe"
-                >
-                  গুগল ক্যালেন্ডারে সব ওয়াক্ত সিঙ্ক করুন
-                </button>
-              </div>
-            </div>
+          {/* TAB 2: AL HADITH SECTION (Dedicated Modern Islamic Hadith Module) */}
+          {activeTab === 'hadith' && (
+            <AlHadithSection
+              onNavigateToWakt={() => {
+                setActiveTab('muhasaba');
+                setMuhasabaSubTab('wakt');
+              }}
+            />
           )}
 
-          {/* TAB 3: COMBINED MUHASABA, DIGITAL TASBEEH & RUQYAH AUDIO/TEXT SECTION (Kept mounted for background playback) */}
+          {/* TAB 3: COMBINED MUHASABA, WAKT, DIGITAL TASBEEH & RUQYAH (Kept mounted for background playback) */}
           <div className={activeTab === 'muhasaba' ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}>
             <div className="text-center pt-1 pb-1">
-              <h2 className="text-base font-extrabold text-slate-800">মুহাসাবা, তাসবীহ ও রুকইয়াহ</h2>
-              <p className="text-xs text-slate-500 font-medium">দৈনিক অগ্রগতি, তাসবীহ গণনা এবং রুকইয়াহ অডিও ও টেক্সট</p>
+              <h2 className="text-base font-extrabold text-slate-800">মুহাসাবা, ওয়াক্ত ও রুকইয়াহ</h2>
+              <p className="text-xs text-slate-500 font-medium">দৈনিক আত্মশুদ্ধি, নামাজের সময়সূচী এবং তাসবীহ ও রুকইয়াহ</p>
             </div>
 
-            <MuhasabaScoreCard
-              state={dayState}
-              allAmols={allAmols}
-              currentDateStr={currentDateStr}
-              onOpenReflection={() => setIsReflectionOpen(true)}
-              onOpenTasbeeh={() => setIsTasbeehOpen(true)}
-            />
+            {/* Segmented Switcher for Muhasaba & Wakt within Muhasaba Module */}
+            <div className="flex p-1 rounded-2xl bg-slate-100 border border-slate-200/90 shadow-xs">
+              <button
+                onClick={() => setMuhasabaSubTab('muhasaba')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  muhasabaSubTab === 'muhasaba'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                মুহাসাবা ও তাসবীহ
+              </button>
+              <button
+                onClick={() => setMuhasabaSubTab('wakt')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  muhasabaSubTab === 'wakt'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ওয়াক্ত ও জামাত সময়সূচী
+              </button>
+            </div>
+
+            {/* Wakt Section embedded inside Muhasaba Module */}
+            {muhasabaSubTab === 'wakt' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <PrayerTimeBanner
+                  schedule={prayerSchedule}
+                  selectedDistrict={selectedDistrict}
+                  onDistrictChange={(dist) => {
+                    setSelectedDistrict(dist);
+                    if (currentUser) {
+                      saveUserProfile(currentUser.uid, { district: dist });
+                    }
+                  }}
+                  onOpenCalendarSync={() => setIsCalendarSyncOpen(true)}
+                />
+
+                <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
+                  <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+                    হানাফী আসর ও জামাত বিধান
+                  </h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    ইমামে আযম আবু হানিফা (রহ.) এর সিদ্ধান্ত অনুযায়ী বস্তুর ছায়া দ্বিগুণ (২ গুণ) হলে আসরের ওয়াক্ত শুরু হয়। বাংলাদেশে প্রচলিত সকল মসজিদে এই ওয়াক্ত ও জামাত কঠোরভাবে অনুসরণ করা হয়।
+                  </p>
+                  <button
+                    onClick={() => setIsCalendarSyncOpen(true)}
+                    className="w-full py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all cc-light-swipe"
+                  >
+                    গুগল ক্যালেন্ডারে সব ওয়াক্ত সিঙ্ক করুন
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Muhasaba Scorecard (visible when muhasaba subtab is selected) */}
+            {muhasabaSubTab === 'muhasaba' && (
+              <MuhasabaScoreCard
+                state={dayState}
+                allAmols={allAmols}
+                currentDateStr={currentDateStr}
+                onOpenReflection={() => setIsReflectionOpen(true)}
+                onOpenTasbeeh={() => setIsTasbeehOpen(true)}
+              />
+            )}
 
             {/* Unified Digital Tasbeeh Card inside Muhasaba Section */}
             <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
@@ -847,6 +886,7 @@ export default function App() {
           onToggleOptionalAmol={handleToggleOptionalAmol}
           onOpenInstallModal={() => setIsInstallModalOpen(true)}
           onOpenExportModal={() => setIsExportOpen(true)}
+          onOpenOnboarding={() => setIsOnboardingOpen(true)}
         />
 
         {/* Modals */}
@@ -909,6 +949,15 @@ export default function App() {
         <DeveloperInfoModal
           isOpen={isDeveloperOpen}
           onClose={() => setIsDeveloperOpen(false)}
+        />
+
+        {/* 4-Step Mobile Onboarding Flow (Language, Knowledge, Features, Notifications) */}
+        <OnboardingFlowModal
+          isOpen={isOnboardingOpen}
+          onComplete={(_lang) => {
+            setIsOnboardingOpen(false);
+          }}
+          onClose={() => setIsOnboardingOpen(false)}
         />
 
       </div>

@@ -33,6 +33,7 @@ import { saveUserProfile } from '../services/userService';
 import { BD_DISTRICTS } from '../services/prayerTimes';
 import { OPTIONAL_AMOLS } from '../data/defaultAmols';
 import { calculateMuhasabaScore, loadDayStateLocal } from '../services/amolStorage';
+import { Globe } from 'lucide-react';
 
 interface ProfileDashboardModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ interface ProfileDashboardModalProps {
   onToggleOptionalAmol: (amolId: string) => void;
   onOpenInstallModal: () => void;
   onOpenExportModal: () => void;
+  onOpenOnboarding?: () => void;
 }
 
 export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
@@ -68,6 +70,7 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
   onToggleOptionalAmol,
   onOpenInstallModal,
   onOpenExportModal,
+  onOpenOnboarding,
 }) => {
   if (!isOpen) return null;
 
@@ -258,6 +261,33 @@ export const ProfileDashboardModal: React.FC<ProfileDashboardModalProps> = ({
               className="py-1.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold shadow-sm transition-all shrink-0 active:scale-95"
             >
               ইনস্টল করুন
+            </button>
+          </div>
+
+          {/* Onboarding & Language Selection Card */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/80 flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-700 shrink-0">
+                <Globe className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-800 leading-tight">
+                  অ্যাপ পরিচিতি ও ভাষা নির্বাচন
+                </h4>
+                <p className="text-[10px] text-slate-500 font-medium">
+                  ৪-ধাপের ওয়েলকাম গাইড ও ভাষা পরিবর্তন
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenOnboarding?.();
+              }}
+              className="py-1.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold shadow-xs transition-all shrink-0 active:scale-95"
+            >
+              গাইড দেখুন
             </button>
           </div>
 

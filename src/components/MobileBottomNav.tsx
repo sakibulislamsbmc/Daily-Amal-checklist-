@@ -1,14 +1,14 @@
 import React from 'react';
 import { 
   CheckSquare, 
-  Clock, 
+  BookOpen, 
   Award, 
   Tv,
   User as UserIcon
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 
-export type MobileTab = 'checklist' | 'prayers' | 'muhasaba' | 'media' | 'developer' | 'profile';
+export type MobileTab = 'checklist' | 'hadith' | 'muhasaba' | 'media' | 'developer' | 'profile';
 
 interface MobileBottomNavProps {
   activeTab: MobileTab;
@@ -39,11 +39,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       gradientClass: 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-700 text-white',
     },
     {
-      id: 'prayers',
-      labelBn: 'ওয়াক্ত',
-      title: 'সালাতের ওয়াক্ত ও জামাত সময়সূচী',
-      icon: Clock,
-      gradientClass: 'bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-700 text-white',
+      id: 'hadith',
+      labelBn: 'আল হাদিস',
+      title: 'আল হাদিস, কিতাবসমূহ, কুইজ ও অফলাইন সংগ্রহ',
+      icon: BookOpen,
+      gradientClass: 'bg-gradient-to-br from-teal-400 via-emerald-600 to-teal-800 text-white',
     },
     {
       id: 'muhasaba',

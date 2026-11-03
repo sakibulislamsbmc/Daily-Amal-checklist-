@@ -7,7 +7,8 @@ import {
   LogOut, 
   Flame,
   User as UserIcon,
-  Smartphone
+  Smartphone,
+  Globe
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { googleSignIn, logout } from '../firebase';
@@ -24,6 +25,7 @@ interface NavbarProps {
   onOpenProfile: () => void;
   onOpenInstallModal: () => void;
   onOpenDeveloper: () => void;
+  onOpenOnboarding?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -37,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfile,
   onOpenInstallModal,
   onOpenDeveloper,
+  onOpenOnboarding,
 }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -117,6 +120,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Smartphone className="w-4 h-4 stroke-[2.2]" />
           </button>
+
+          {/* Onboarding & Language Selection Button */}
+          {onOpenOnboarding && (
+            <button
+              onClick={onOpenOnboarding}
+              className="p-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200/50 transition-colors"
+              title="অ্যাপ পরিচিতি ও ভাষা নির্বাচন (Onboarding Guide)"
+            >
+              <Globe className="w-4 h-4 stroke-[2.2]" />
+            </button>
+          )}
 
           {/* App Developer Information Button */}
           <button
